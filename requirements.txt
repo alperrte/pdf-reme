@@ -1,0 +1,9 @@
+PySide6
+SQLAlchemy
+pypdf
+Pillow
+platformdirs
+pytest
+pytest-qt
+ruff
+alembic
