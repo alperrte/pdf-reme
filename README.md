@@ -1,5 +1,9 @@
 <div align="center">
 
+<img src="src/pdf_reme/resources/images/pdf-reme-logo.jpeg" alt="PDF-REME Logo" width="260" />
+
+<br><br>
+
 <img src="assets/1.png" alt="PDF-REME Hero" width="100%" />
 
 PDF-REME
