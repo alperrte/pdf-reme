@@ -8,22 +8,14 @@ APP_NAME = "PDF-REME"
 
 def get_app_data_dir() -> Path:
     if sys.platform == "win32":
-        local_app_data = os.getenv("LOCALAPPDATA")
-
-        if not local_app_data:
-            raise RuntimeError("LOCALAPPDATA ortam değişkeni bulunamadı.")
-
-        return Path(local_app_data) / APP_NAME
+        return Path.home() / "Documents" / APP_NAME
 
     if sys.platform.startswith("linux"):
-        xdg_data_home = os.getenv("XDG_DATA_HOME")
+        return Path.home() / "Documents" / APP_NAME
 
-        if xdg_data_home:
-            return Path(xdg_data_home) / APP_NAME
-
-        return Path.home() / ".local" / "share" / APP_NAME
-
-    raise RuntimeError(f"Desteklenmeyen işletim sistemi: {sys.platform}")
+    raise RuntimeError(
+        f"Desteklenmeyen işletim sistemi: {sys.platform}"
+    )
 
 
 class AppPaths:
