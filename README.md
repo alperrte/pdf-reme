@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/pdf_reme/resources/images/pdf-reme-logo.jpeg" alt="PDF-REME Logo" width="420">
+<img src="assets/1.png" alt="PDF-REME Hero" width="100%" />
 
 PDF-REME
 
@@ -8,135 +8,230 @@ Read • Edit • Merge • Easily
 
 Windows ve Linux için çevrimdışı, açık kaynak PDF ve belge yönetim aracı.
 
-PDF belgelerinizi yerel olarak görüntüleyin, düzenleyin, birleştirin, bölün ve farklı dosya türlerinden PDF oluşturun — belgelerinizi üçüncü taraf servislere yüklemeden.
+Belgelerinizi görüntüleyin, düzenleyin, birleştirin, bölün ve dönüştürün —
+dosyalarınızı üçüncü taraf servislere yüklemeden, kendi bilgisayarınızda.
 
-<br>
-
-
-
-
-
-
-
-
+<p>
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/UI-PySide6-41CD52?logo=qt&logoColor=white" />
+  <img src="https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tests-53%20Passing-success" />
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-5A5A5A" />
+  <img src="https://img.shields.io/badge/License-Apache--2.0-blue" />
+  <img src="https://img.shields.io/badge/Status-Active%20Development-orange" />
+</p>
 
 </div>
 
-PDF-REME nedir?
+PDF-REME Nedir?
 
-PDF-REME, belge işlemlerini mümkün olduğunca kullanıcının kendi bilgisayarında gerçekleştirmek üzere geliştirilen ücretsiz ve açık kaynak bir masaüstü uygulamasıdır.
+PDF-REME, PDF ve belge işlemlerini mümkün olduğunca kullanıcının kendi bilgisayarında gerçekleştirmek üzere geliştirilen ücretsiz ve açık kaynak bir masaüstü uygulamasıdır.
 
-Temel amaç; PDF ve benzeri belgeleri işlemek için dosyaları web servislerine, bulut tabanlı dönüştürücülere veya üçüncü taraf yapay zekâ araçlarına yükleme ihtiyacını azaltan, sade ve güvenli bir yerel çalışma ortamı sunmaktır.
+Temel hedef; PDF ve benzeri belgeleri işlemek için web tabanlı araçlara, bulut servislerine veya üçüncü taraf dönüştürücülere dosya yükleme ihtiyacını azaltan, sade ve güvenli bir local-first çalışma alanı sunmaktır.
 
-Local-first yaklaşım: Belgeler varsayılan olarak kullanıcının kendi bilgisayarında işlenir ve uygulama kütüphanesinde saklanır.
+Local-first: Belgeleriniz varsayılan olarak cihazınızda kalır ve işlemler yerel olarak gerçekleştirilir.
 
-V1 hedefleri
+Ürün Vizyonu
 
-Özellik
+<div align="center">
 
-Durum
+<img src="assets/2.png" alt="PDF-REME Ana Sayfa Konsepti" width="100%" />
 
-Yerel belge kütüphanesi
+</div>
 
-🚧 Geliştiriliyor
+Yukarıdaki görsel, PDF-REME için hazırlanan arayüz konseptidir. PySide6 tabanlı gerçek arayüz geliştirme sürecinde bu tasarım dili referans alınacaktır.
 
-Güvenli dosya içe aktarma
+PDF-REME V1 ile hedeflenen deneyim:
 
-✅ Hazır
+PDF dosyalarını görüntüleme
 
-SHA-256 ile kopya tespiti
+PDF birleştirme ve bölme
 
-✅ Hazır
+Sayfa sıralama, silme, döndürme ve çoğaltma
 
-PDF / görsel / OOXML doğrulama
+Başka PDF'den sayfa ekleme
 
-✅ Hazır
-
-SQLite + SQLAlchemy veri katmanı
-
-✅ Hazır
-
-Alembic migration altyapısı
-
-✅ Hazır
-
-Transaction / rollback yönetimi
-
-✅ Hazır
-
-Favoriler ve son kullanılanlar
-
-⏳ Planlandı
-
-Çöp kutusu ve geri yükleme
-
-⏳ Planlandı
-
-PDF görüntüleme
-
-⏳ Planlandı
-
-PDF birleştirme
-
-⏳ Planlandı
-
-PDF bölme
-
-⏳ Planlandı
-
-Sayfa sıralama / silme / döndürme / çoğaltma
-
-⏳ Planlandı
-
-Undo / Redo
-
-⏳ Planlandı
-
-JPG / PNG → PDF
-
-⏳ Planlandı
+JPG / JPEG / PNG → PDF
 
 DOC / DOCX → PDF
 
-⏳ Planlandı
-
 PPT / PPTX → PDF
 
-⏳ Planlandı
+Yerel belge kütüphanesi
 
-Light / Dark tema
+Favoriler ve son kullanılanlar
 
-⏳ Planlandı
+Çöp kutusu ve geri yükleme
 
-Windows / Linux paketleri
+Undo / Redo
 
-⏳ V1 sonunda
+Light / Dark tema altyapısı
 
-Proje şu anda aktif geliştirme aşamasındadır. Henüz son kullanıcıya yönelik kararlı V1 sürümü yayımlanmamıştır.
+Türkçe / İngilizce i18n altyapısı
 
-Güvenlik ve yerel çalışma yaklaşımı
+Excel (XLS, XLSX) dönüşümü V1 kapsamına dahil değildir.
 
-PDF-REME geliştirilirken dosya güvenliği temel ürün ilkelerinden biri olarak ele alınır.
+Kütüphane Konsepti
 
-Kaynak dosya açık kullanıcı işlemi olmadan değiştirilmez.
+<div align="center">
 
-İçe aktarılan belgelerin uygulama kontrollü bir kopyası oluşturulur.
+<img src="assets/3.png" alt="PDF-REME Kütüphane Konsepti" width="100%" />
+
+</div>
+
+PDF-REME kütüphanesi, içe aktarılan ve uygulama tarafından oluşturulan belgeleri tek bir yerden yönetmeyi hedefler.
+
+Planlanan yapı:
+
+Yüklenenler
+
+Oluşturulanlar
+
+Favoriler
+
+Son kullanılanlar
+
+Arama ve filtreleme
+
+Dosya türüne göre ayrım
+
+Çöp kutusu
+
+Yerel metadata yönetimi
+
+PDF Düzenleyici Konsepti
+
+<div align="center">
+
+<img src="assets/4.png" alt="PDF-REME PDF Düzenleyici Konsepti" width="100%" />
+
+</div>
+
+V1 düzenleyici; tam metin düzenleme yerine sayfa tabanlı PDF işlemlerine odaklanır.
+
+Planlanan işlemler:
+
+Sayfaları sürükle-bırak ile sıralama
+
+Sayfa silme
+
+Sayfa döndürme
+
+Sayfa çoğaltma
+
+Başka PDF'den sayfa ekleme
+
+Seçili sayfaları dışa aktarma
+
+Undo / Redo
+
+Save / Save As
+
+Güvenli İçe Aktarma Akışı
+
+<div align="center">
+
+<img src="assets/5.png" alt="PDF-REME Güvenli İçe Aktarma Akışı" width="100%" />
+
+</div>
+
+PDF-REME'nin mevcut backend altyapısında gerçek bir dosya şu kontrollü akıştan geçirilebilir:
+
+Dosya Seç
+    ↓
+Dosya Doğrulama
+    ↓
+SHA-256 Hesaplama
+    ↓
+Kopya Kontrolü
+    ↓
+Güvenli Yerel Kopyalama
+    ↓
+Document Metadata Kaydı
+    ↓
+SQLite COMMIT / ROLLBACK
+
+Bu yapı sayesinde:
+
+kaynak dosya korunur,
+
+aynı içeriğe sahip dosyalar SHA-256 üzerinden tespit edilir,
+
+mevcut dosyanın üzerine yanlışlıkla yazılmaz,
+
+yarım kalan .part dosyaları temizlenir,
+
+veritabanı hatasında rollback uygulanır,
+
+veritabanında karşılığı olmayan yetim kopyalar bırakılmaz.
+
+Aktif Geliştirme
+
+<div align="center">
+
+<img src="assets/6.png" alt="PDF-REME Aktif Geliştirme" width="100%" />
+
+</div>
+
+PDF-REME şu anda aktif olarak geliştirilmektedir.
+
+Backend-first yaklaşımıyla önce çekirdek iş akışları ve güvenli veri yönetimi tamamlanmakta, ardından Stitch ile hazırlanan tasarım dili PySide6 arayüzüne uygulanacaktır.
+
+Güncel checkpoint
+
+53 passed
+
+Şu anda tamamlanan temel altyapılar:
+
+SQLite + SQLAlchemy veri katmanı
+
+Repository pattern
+
+Alembic migration altyapısı
+
+Transaction / rollback yönetimi
+
+SHA-256 hesaplama
+
+Duplicate detection
+
+PDF ve görsel doğrulama
+
+DOCX / PPTX temel OOXML doğrulama
+
+Güvenli kütüphane kopyalama
+
+Gerçek PDF import akışı
+
+Metadata veritabanı kaydı
+
+Otomatik unit + integration testleri
+
+Güvenlik ve Yerel Çalışma Yaklaşımı
+
+PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
+
+Kaynak belge otomatik olarak değiştirilmez.
+
+Uygulama kendi kontrollü kopyası üzerinde çalışır.
 
 Orijinal dosya yolu metadata olarak saklanır.
 
-Aynı içeriğe sahip dosyalar SHA-256 özeti üzerinden tespit edilir.
+Fiziksel belgeler SQLite içine BLOB olarak gömülmez.
 
-Kopyalama işlemlerinde yarım dosya bırakmamak için geçici .part dosyaları kullanılır.
+Aynı dosyanın tekrar eklenmesi SHA-256 ile tespit edilir.
 
-Veritabanı işlemleri transaction sınırları içerisinde yürütülür.
+Başarısız kopyalamalarda geçici dosyalar temizlenir.
 
-Hata durumunda rollback uygulanır ve yetim dosyalar temizlenir.
+Veritabanı işlemleri transaction sınırlarında yürütülür.
 
-PDF ve görseller yalnızca uzantıya göre değil, mümkün olan yerlerde içerik açısından da doğrulanır.
+Hata halinde rollback uygulanır.
 
-DOCX ve PPTX dosyalarında temel OOXML paket yapısı kontrol edilir.
+Log kayıtlarında belge içeriğinin tutulmaması hedeflenir.
 
-Desteklenen dosya türleri
+Temel işlevlerin internet bağlantısı olmadan çalışması hedeflenir.
+
+Desteklenen Dosya Türleri
 
 İçe aktarma
 
@@ -150,9 +245,7 @@ DOC / DOCX → PDF
 
 PPT / PPTX → PDF
 
-Excel (XLS, XLSX) dönüşümü V1 kapsamına dahil değildir.
-
-Teknoloji yığını
+Teknoloji Yığını
 
 Alan
 
@@ -162,11 +255,11 @@ Programlama dili
 
 Python
 
-Masaüstü arayüz
+Masaüstü UI
 
 PySide6 + Qt Widgets
 
-Tema sistemi
+Stil
 
 QSS
 
@@ -196,7 +289,7 @@ Alembic
 
 Office → PDF
 
-LibreOffice Runtime (V1 entegrasyonu planlandı)
+LibreOffice Runtime (planlanan entegrasyon)
 
 Test
 
@@ -206,101 +299,69 @@ Kod kalitesi
 
 Ruff
 
+Lisans
+
+Apache License 2.0
+
 Mimari
 
-PDF-REME klasik web uygulaması gibi ayrı bir frontend/backend sunucusu kullanmaz. Masaüstü uygulaması içerisinde katmanlı bir mimari izlenir.
-
-Presentation
-    │
-    ▼
-Application / Use Cases
-    │
-    ▼
-Domain
-    ▲
-    │
-Infrastructure
-
-Katmanlar
+PDF-REME klasik bir web uygulaması gibi ayrı frontend/backend sunucuları kullanmaz.
+Masaüstü uygulaması içerisinde katmanlı bir yapı izlenir.
 
 src/pdf_reme/
 ├── presentation/      # PySide6 ekranları ve UI bileşenleri
-├── application/       # Use-case ve uygulama servisleri
-├── domain/            # Modeller, kurallar ve repository arayüzleri
-├── infrastructure/    # SQLite, filesystem, PDF ve dönüşüm adaptörleri
-├── shared/            # Paths, config, logging, i18n ve tema altyapısı
-└── resources/         # İkonlar, görseller, QSS ve çeviri kaynakları
+├── application/       # Use-case ve application servisleri
+├── domain/            # Domain modelleri ve repository arayüzleri
+├── infrastructure/    # SQLite, filesystem, PDF ve conversion adaptörleri
+├── shared/            # Paths, config, logging, i18n, theme
+└── resources/         # İkonlar, görseller, stiller ve çeviriler
 
-Amaç, UI katmanının SQLAlchemy veya PDF motoru gibi altyapı detaylarına doğrudan bağımlı olmamasıdır.
-
-Şu anda çalışan backend akışı
-
-Güncel geliştirme noktasında gerçek bir PDF dosyası aşağıdaki akıştan geçirilebilmektedir:
-
-Dosya
-  │
-  ▼
-Dosya doğrulama
-  │
-  ▼
-SHA-256 hesaplama
-  │
-  ▼
-Kopya kontrolü
-  │
-  ▼
-Güvenli yerel kopyalama
-  │
-  ▼
-Document metadata kaydı
-  │
-  ▼
-SQLite / COMMIT
-
-Hata oluşması halinde ilgili işlem rollback edilir ve tamamlanmamış kopyalar temizlenir.
+Temel amaç, UI katmanının SQLAlchemy, dosya sistemi veya PDF motoru gibi altyapı detaylarına doğrudan bağımlı olmamasıdır.
 
 Testler
 
-Backend/core geliştirmeleri otomatik testlerle doğrulanmaktadır.
+Tüm mevcut testleri çalıştırmak için:
+
+python -m pytest -v
 
 Güncel geliştirme checkpoint'i:
 
 53 passed
 
-Tüm testleri çalıştırmak için:
+Testlerde örnek olarak şu senaryolar doğrulanmaktadır:
 
-python -m pytest -v
+başarılı repository işlemleri,
 
-Test yapısı:
+migration upgrade / downgrade,
 
-tests/
-├── unit/
-├── integration/
-├── gui/
-└── fixtures/
-
-Her backend özelliğinde mümkün olduğunca şu senaryolar kontrol edilir:
-
-başarılı işlem,
-
-geçersiz giriş,
-
-hata / rollback,
+commit / rollback,
 
 kaynak dosyanın korunması,
 
-fiziksel çıktının doğrulanması,
+büyük dosyaların parça parça hashlenmesi,
 
-önceki özelliklere karşı regresyon.
+bozuk PDF ve görsel reddi,
 
-Geliştirme ortamı
+sahte DOCX / PPTX reddi,
 
-1. Repository'yi klonlayın
+duplicate detection,
+
+güvenli .part kopyalama,
+
+veritabanı hatasında fiziksel dosya temizliği,
+
+gerçek import akışı,
+
+regresyon kontrolleri.
+
+Geliştirme Ortamı
+
+Repository'yi klonla
 
 git clone https://github.com/alperrte/pdf-reme.git
 cd pdf-reme
 
-2. Sanal ortam oluşturun
+Sanal ortam oluştur
 
 Windows:
 
@@ -312,29 +373,27 @@ Linux:
 python3 -m venv venv
 source venv/bin/activate
 
-3. Bağımlılıkları yükleyin
+Bağımlılıkları yükle
 
 python -m pip install -r requirements.txt
 
-4. Veritabanını hazırlayın
+Veritabanını hazırla
 
 alembic upgrade head
 
-5. Testleri çalıştırın
+Testleri çalıştır
 
 python -m pytest -v
 
-6. Uygulamayı başlatın
+Uygulamayı başlat
 
 python start_app.py
 
-Frontend henüz aktif geliştirme aşamasındadır. Kullanıcı arayüzü V1 tamamlanmadan önce önemli ölçüde değişebilir.
+Kullanıcı arayüzü halen aktif geliştirme aşamasındadır.
 
-Yerel veri yapısı
+Yerel Veri Yapısı
 
-PDF-REME kullanıcı verilerini uygulamanın yerel veri alanında tutar.
-
-Geliştirme sırasında Windows'taki mevcut yapı:
+Windows geliştirme ortamındaki güncel veri yapısı:
 
 Documents/
 └── PDF-REME/
@@ -356,44 +415,75 @@ Documents/
     ├── backups/
     └── logs/
 
-PDF ve diğer belgeler SQLite içerisine BLOB olarak gömülmez. Fiziksel dosyalar dosya sisteminde tutulur; belge metadata bilgileri SQLite içerisinde saklanır.
-
-Yol haritası
+Yol Haritası
 
 Backend / Core
-├── ✅ Veri erişim ve repository altyapısı
-├── ✅ Alembic migration
-├── ✅ Transaction yönetimi
-├── ✅ Dosya doğrulama
-├── ✅ SHA-256 / duplicate detection
-├── ✅ Güvenli import
-├── 🚧 Kütüphane servisleri
-├── ⏳ Favoriler / son kullanılanlar
-├── ⏳ Çöp kutusu
-├── ⏳ PDF merge / split
-├── ⏳ Sayfa işlemleri
-├── ⏳ Undo / Redo
-├── ⏳ Görsellerden PDF
-├── ⏳ Office → PDF
-└── ⏳ Autosave / recovery
+
+Proje ve katmanlı mimari temeli
+
+SQLite + SQLAlchemy
+
+Repository altyapısı
+
+Alembic migration
+
+Transaction yönetimi
+
+Dosya doğrulama
+
+SHA-256 / duplicate detection
+
+Güvenli import
+
+Kütüphane servisleri
+
+Favoriler / Son kullanılanlar
+
+Çöp kutusu / Restore
+
+PDF görüntüleme
+
+Merge / Split
+
+Sayfa işlemleri
+
+Undo / Redo
+
+Görsellerden PDF
+
+Office → PDF
+
+Autosave / Session recovery
 
 Frontend
-├── ⏳ Stitch tasarım çalışmaları
-├── ⏳ PySide6 uygulama shell'i
-├── ⏳ Ana Sayfa
-├── ⏳ Kütüphane
-├── ⏳ PDF Düzenleyici
-├── ⏳ Dönüşüm ekranları
-└── ⏳ Backend entegrasyonu
+
+Görsel tasarım dili / konsept çalışmaları
+
+PySide6 uygulama shell'i
+
+Ana Sayfa
+
+Kütüphane
+
+PDF Düzenleyici
+
+Dönüştürme ekranları
+
+Light / Dark tema
+
+Backend entegrasyonu
 
 Release
-├── ⏳ Windows Setup
-├── ⏳ Windows Portable
-└── ⏳ Linux paketi
 
-V1 kapsamı dışında
+Windows Setup
 
-Aşağıdaki özellikler ilk sürümün kapsamına dahil değildir:
+Windows Portable
+
+Linux paketi
+
+V1 Kapsamı Dışında
+
+İlk sürümde yer alması planlanmayan başlıca özellikler:
 
 PDF içindeki mevcut metin ve nesneleri Word benzeri düzenleme
 
@@ -417,25 +507,25 @@ macOS paketleme
 
 Otomatik güncelleme
 
-Katkıda bulunma
+Katkıda Bulunma
 
-PDF-REME açık kaynak bir projedir. Proje V1 geliştirme sürecinde olduğu için mimari ve özellikler değişebilir.
+Katkıda bulunmak istersen:
 
-Katkı yapmak isteyenler:
+Repository'yi fork et
 
-Repository'yi fork edebilir.
+Ayrı bir branch oluştur
 
-Ayrı bir branch üzerinde çalışabilir.
+Değişikliklerini geliştir
 
-Değişiklikleri test edebilir.
+Testleri çalıştır
 
-Pull Request açabilir.
+Pull Request aç
 
-Yeni özellik önerilerinin V1 kapsamını, veri güvenliğini ve mevcut mimariyi bozmaması beklenir.
+Proje halen V1 geliştirme sürecinde olduğu için mimari ve API'lerde değişiklikler olabilir.
 
 Lisans
 
-Bu proje Apache License 2.0 altında lisanslanmıştır.
+PDF-REME Apache License 2.0 altında lisanslanmıştır.
 
 Detaylar için LICENSE dosyasını inceleyebilirsiniz.
 
@@ -445,16 +535,14 @@ Geliştirici
 
 Alper Temiz
 
-Software Engineering Student • Full-Stack Developer • AI/ML Engineer
+Yazılım Mühendisliği Öğrencisi • Full-Stack Developer • AI/ML Engineer
 
 PDF-REME — Read • Edit • Merge • Easily
 
-</div>
-
-<div align="center">
+<br>
 
 Belgeleriniz cihazınızda. İşlemleriniz kontrolünüzde.
 
-⭐ Projeyi faydalı bulursanız GitHub'da yıldız verebilirsiniz.
+⭐ Projeyi faydalı bulursanız yıldız verebilirsiniz.
 
 </div>
