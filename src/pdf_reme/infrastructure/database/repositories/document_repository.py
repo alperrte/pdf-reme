@@ -36,3 +36,7 @@ class SQLAlchemyDocumentRepository(DocumentRepository):
         self.session.flush()
 
         return True
+
+    def get_by_sha256(self, sha256: str) -> Document | None:
+        statement = select(Document).where(Document.sha256 == sha256)
+        return self.session.scalar(statement)

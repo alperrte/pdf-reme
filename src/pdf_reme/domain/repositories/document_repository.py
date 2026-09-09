@@ -21,3 +21,7 @@ class DocumentRepository(ABC):
     @abstractmethod
     def delete(self, document_id: str) -> bool:
         pass
+
+    @abstractmethod
+    def get_by_sha256(self, sha256: str):
+        pass
