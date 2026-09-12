@@ -81,3 +81,8 @@ class Document(Base):
         ForeignKey("documents.id"),
         nullable=True,
     )
+    
+    trashed_from_path: Mapped[str | None] = mapped_column(
+    String,
+    nullable=True,
+)
