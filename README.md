@@ -4,7 +4,7 @@
 
 <br><br>
 
-<img src="assets/1.png" alt="PDF-REME Hero" width="100%" />
+<img src="src/pdf_reme/resources/images/1.png" alt="PDF-REME Hero" width="100%" />
 
 # PDF-REME
 
@@ -43,7 +43,7 @@ Temel hedef; PDF ve benzeri belgeleri işlemek için web tabanlı araçlara, bul
 
 <div align="center">
 
-<img src="assets/2.png" alt="PDF-REME Ana Sayfa Konsepti" width="100%" />
+<img src="src/pdf_reme/resources/images/2.png" alt="PDF-REME Ana Sayfa Konsepti" width="100%" />
 
 </div>
 
@@ -73,7 +73,7 @@ PDF-REME V1 ile hedeflenen deneyim:
 
 <div align="center">
 
-<img src="assets/3.png" alt="PDF-REME Kütüphane Konsepti" width="100%" />
+<img src="src/pdf_reme/resources/images/3.png" alt="PDF-REME Kütüphane Konsepti" width="100%" />
 
 </div>
 
@@ -104,7 +104,7 @@ Planlanan kullanıcı arayüzü yapısı:
 
 <div align="center">
 
-<img src="assets/4.png" alt="PDF-REME PDF Düzenleyici Konsepti" width="100%" />
+<img src="src/pdf_reme/resources/images/4.png" alt="PDF-REME PDF Düzenleyici Konsepti" width="100%" />
 
 </div>
 
@@ -129,7 +129,7 @@ Planlanan işlemler:
 
 <div align="center">
 
-<img src="assets/5.png" alt="PDF-REME Güvenli İçe Aktarma Akışı" width="100%" />
+<img src="src/pdf_reme/resources/images/5.png" alt="PDF-REME Güvenli İçe Aktarma Akışı" width="100%" />
 
 </div>
 
@@ -213,7 +213,7 @@ Kalıcı Silme
 
 <div align="center">
 
-<img src="assets/6.png" alt="PDF-REME Aktif Geliştirme" width="100%" />
+<img src="src/pdf_reme/resources/images/6.png" alt="PDF-REME Aktif Geliştirme" width="100%" />
 
 </div>
 
