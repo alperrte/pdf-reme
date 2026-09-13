@@ -19,7 +19,7 @@ Belgelerinizi görüntüleyin, düzenleyin, birleştirin, bölün ve dönüştü
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/UI-PySide6-41CD52?logo=qt&logoColor=white" />
   <img src="https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-95%20Passing-success" />
+  <img src="https://img.shields.io/badge/Tests-169%20Passing-success" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-5A5A5A" />
   <img src="https://img.shields.io/badge/License-Apache--2.0-blue" />
   <img src="https://img.shields.io/badge/Status-Active%20Development-orange" />
@@ -54,7 +54,9 @@ PDF-REME V1 ile hedeflenen deneyim:
 - PDF dosyalarını görüntüleme
 - PDF birleştirme ve bölme
 - Sayfa sıralama, silme, döndürme ve çoğaltma
+- İki sayfanın yerini değiştirme
 - Başka PDF'den sayfa ekleme
+- Seçili sayfaları yeni PDF olarak dışa aktarma
 - JPG / JPEG / PNG → PDF
 - DOC / DOCX → PDF
 - PPT / PPTX → PDF
@@ -62,8 +64,8 @@ PDF-REME V1 ile hedeflenen deneyim:
 - Favoriler ve son kullanılanlar
 - Çöp kutusu ve geri yükleme
 - Undo / Redo
-- Light / Dark tema altyapısı
-- Türkçe / İngilizce i18n altyapısı
+- Türkçe öncelikli, i18n'e hazır yapı
+- İlerleyen aşamalar için tema altyapısı
 
 > Excel (`XLS`, `XLSX`) dönüşümü V1 kapsamına dahil değildir.
 
@@ -85,6 +87,8 @@ Mevcut backend altyapısında:
 - favori belgeler takip edilebilir,
 - son kullanılan belgeler `last_opened_at` üzerinden sıralanabilir,
 - belgeler çöp kutusuna taşınabilir ve geri yüklenebilir,
+- Merge, Split ve sayfa düzenleme işlemlerinden üretilen dosyalar `generated` kütüphanesine kaydedilebilir,
+- oluşturulan belgeler için SHA-256, dosya boyutu, sayfa sayısı ve üretim türü metadata olarak tutulabilir,
 - fiziksel dosyalar dosya sisteminde, metadata bilgileri SQLite üzerinde tutulur.
 
 Planlanan kullanıcı arayüzü yapısı:
@@ -110,16 +114,23 @@ Planlanan kullanıcı arayüzü yapısı:
 
 V1 düzenleyici; tam metin düzenleme yerine **sayfa tabanlı PDF işlemlerine** odaklanır.
 
-Planlanan işlemler:
+Backend'de şu işlemler tamamlanmıştır:
 
-- Sayfaları sürükle-bırak ile sıralama
-- Sayfa silme
-- Sayfa döndürme
-- Sayfa çoğaltma
-- Başka PDF'den sayfa ekleme
-- Seçili sayfaları dışa aktarma
-- Undo / Redo
-- Save / Save As
+- [x] Sayfaları istenilen sıraya göre yeniden sıralama
+- [x] İki sayfanın yerini değiştirme
+- [x] Seçilen sayfaları silme
+- [x] Seçili sayfaları yeni PDF olarak dışa aktarma
+- [x] Kaynak PDF'yi değiştirmeden yeni çıktı üretme
+- [x] Çıktıları `generated` kütüphanesine kaydetme
+
+Planlanan devam özellikleri:
+
+- [ ] Sayfa döndürme
+- [ ] Sayfa çoğaltma
+- [ ] Başka PDF'den sayfa ekleme
+- [ ] Undo / Redo
+- [ ] Save / Save As kullanıcı akışı
+- [ ] PySide6 arayüzünde drag & drop sayfa sıralama
 
 > V1 kapsamında PDF içindeki mevcut metin ve nesnelerin Word benzeri biçimde düzenlenmesi hedeflenmemektedir.
 
@@ -209,6 +220,184 @@ Kalıcı Silme
 
 ---
 
+## PDF Birleştirme (Merge)
+
+PDF-REME backend'inde birden fazla PDF dosyasını kullanıcının verdiği sırayı koruyarak tek bir yeni PDF dosyasında birleştiren altyapı tamamlanmıştır.
+
+```text
+PDF 3
+PDF 1
+PDF 2
+   ↓
+PdfMergeService
+   ↓
+3 → 1 → 2 sırasını koruyan yeni PDF
+   ↓
+library/generated/
+   ↓
+Document metadata kaydı
+```
+
+Mevcut Merge davranışları:
+
+- en az iki PDF zorunluluğu,
+- verilen dosya sırasının aynen korunması,
+- kaynak PDF'lerin değiştirilmemesi,
+- PDF olmayan veya bulunamayan girdilerin reddedilmesi,
+- şifreli PDF'lerin kontrollü olarak reddedilmesi,
+- çıktı dosyasının kaynak PDF'lerden birinin üzerine yazılmasının engellenmesi,
+- aynı isimli generated çıktılarda benzersiz dosya adı oluşturulması,
+- generated klasörü dışına yazmayı engelleyen dosya adı / path kontrolü,
+- hata durumunda yarım çıktı dosyasının temizlenmesi,
+- DB kayıt hatasında oluşturulan fiziksel çıktının temizlenmesi,
+- SHA-256, dosya boyutu ve sayfa sayısının metadata olarak kaydedilmesi,
+- `generation_type = "merge"` ile üretilen belgenin işaretlenmesi.
+
+Gerçek dosya testi:
+
+```bash
+python scripts/manual_merge_test.py
+```
+
+---
+
+## PDF Sayfa Ayırma ve Bölme (Split)
+
+PDF-REME backend'inde kullanıcı tarafından seçilen sayfalardan yeni PDF üretme ve bir PDF'yi birden fazla parçaya bölme altyapısı tamamlanmıştır.
+
+Sayfa seçim ifadesi örneği:
+
+```text
+2,5,8-12,37
+```
+
+şuna dönüştürülebilir:
+
+```text
+2, 5, 8, 9, 10, 11, 12, 37
+```
+
+`PageSelectionParser` şu hatalı durumları kontrollü biçimde reddeder:
+
+- boş ifade,
+- 0 veya negatif sayfa numarası,
+- belge sınırını aşan sayfa numarası,
+- ters aralık (`8-5`),
+- geçersiz metin,
+- geçersiz aralık biçimi.
+
+Tekrarlanan sayfa numaraları sıralama korunarak tekilleştirilir.
+
+Split altyapısında:
+
+- seçilen sayfalardan tek yeni PDF oluşturma,
+- PDF'yi iki parçaya bölme,
+- PDF'yi dört parçaya bölme,
+- PDF'yi istenilen sayıda parçaya bölme,
+- özel sayfa gruplarından ayrı PDF'ler oluşturma,
+- eşit olmayan bölmelerde hiçbir sayfayı kaybetmeme,
+- kaynak PDF'yi değiştirmeme,
+- her çıktıyı `generated` kütüphanesine ayrı Document kaydı olarak ekleme,
+- her çıktı için SHA-256 / dosya boyutu / sayfa sayısı hesaplama,
+- aynı isimli çıktıların üzerine yazmama,
+- path kontrolü,
+- hata durumunda daha önce oluşturulmuş yarım çıktıları temizleme
+
+davranışları uygulanmıştır.
+
+Örneğin 10 sayfalık bir PDF dört parçaya bölündüğünde:
+
+```text
+3 + 3 + 2 + 2 = 10 sayfa
+```
+
+şeklinde dağıtılır ve hiçbir sayfa kaybolmaz.
+
+Kullanılan generation type değerleri:
+
+```text
+split_extract
+split_parts
+split_groups
+```
+
+Gerçek dosya testi:
+
+```bash
+python scripts/manual_split_test.py
+```
+
+---
+
+## Sayfa Düzenleme Backend'i
+
+PDF-REME'nin sayfa tabanlı düzenleme altyapısında ilk üç temel işlem tamamlanmıştır.
+
+### Sayfa sıralama
+
+`reorder_pages()` verilen yeni sırayı birebir uygular.
+
+```text
+1 2 3 4 5
+↓
+5 1 3 2 4
+```
+
+Yeni sıranın belgedeki tüm sayfaları tam olarak bir kez içermesi zorunludur. Eksik veya tekrar eden sıralamalar reddedilir.
+
+### İki sayfanın yerini değiştirme
+
+`swap_pages()` yalnızca belirtilen iki sayfanın yerini değiştirir ve mevcut `reorder_pages()` altyapısını tekrar kullanır.
+
+```text
+2 ↔ 5
+
+1 2 3 4 5
+↓
+1 5 3 4 2
+```
+
+### Sayfa silme
+
+`delete_pages()` seçilen sayfaları yeni PDF çıktısından kaldırır.
+
+```text
+Sil: 2,4
+
+1 2 3 4 5
+↓
+1 3 5
+```
+
+Tüm sayfaların aynı işlemde silinmesine izin verilmez.
+
+Üç işlemde de:
+
+- kaynak PDF korunur,
+- çıktı `library/generated/` altında yeni bir PDF olarak oluşturulur,
+- aynı isimli mevcut çıktının üzerine yazılmaz,
+- path traversal niteliğindeki dosya adları reddedilir,
+- SHA-256 / dosya boyutu / sayfa sayısı metadata olarak saklanır,
+- DB kayıt hatasında fiziksel çıktı temizlenir.
+
+Kullanılan generation type değerleri:
+
+```text
+page_reorder
+page_swap
+page_delete
+```
+
+Gerçek dosya testi:
+
+```bash
+python scripts/manual_page_edit_test.py
+```
+
+Bu script gerçek bir PDF üzerinde reorder, swap ve delete işlemlerini çalıştırır; kaynak PDF'nin değişmediğini ve generated DB kayıtlarının oluştuğunu doğrular.
+
+---
+
 ## Aktif Geliştirme
 
 <div align="center">
@@ -224,7 +413,8 @@ Backend-first yaklaşımıyla önce çekirdek iş akışları ve güvenli veri y
 ### Güncel checkpoint
 
 ```text
-95 passed
+169 passed
+0 failed
 ```
 
 Şu anda tamamlanan temel altyapılar:
@@ -250,6 +440,15 @@ Backend-first yaklaşımıyla önce çekirdek iş akışları ve güvenli veri y
 - [x] Çöp kutusunu toplu temizleme
 - [x] 30 günlük çöp kutusu retention kontrolü
 - [x] Gerçek dosya ile trash / restore / permanent delete testi
+- [x] PDF Merge backend'i
+- [x] PDF Merge generated kütüphane entegrasyonu
+- [x] PDF Split / seçili sayfa çıkarma
+- [x] İkiye / dörde / N parçaya bölme
+- [x] Özel sayfa grupları
+- [x] Sayfa reorder
+- [x] Sayfa swap
+- [x] Sayfa delete
+- [x] Merge / Split / Page Edit gerçek dosya testleri
 - [x] Otomatik unit + integration testleri
 
 ---
@@ -259,13 +458,17 @@ Backend-first yaklaşımıyla önce çekirdek iş akışları ve güvenli veri y
 PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 
 - Kaynak belge otomatik olarak değiştirilmez.
-- Uygulama kendi kontrollü kopyası üzerinde çalışır.
+- Uygulama kendi kontrollü kopyası veya yeni generated çıktısı üzerinde çalışır.
 - Orijinal dosya yolu metadata olarak saklanır.
 - Fiziksel belgeler SQLite içine BLOB olarak gömülmez.
 - Aynı dosyanın tekrar eklenmesi SHA-256 ile tespit edilir.
 - Başarısız kopyalamalarda geçici dosyalar temizlenir.
 - Veritabanı işlemleri transaction sınırlarında yürütülür.
 - Hata halinde rollback uygulanır.
+- DB kayıt hatalarında yeni oluşturulmuş generated çıktılar temizlenebilir.
+- Çıktı dosyalarının kaynak PDF'nin üzerine yazılması engellenir.
+- Generated dosya adlarında klasör yolu / path traversal girişleri reddedilir.
+- Aynı isimli generated çıktıların üzerine yazılmaz; benzersiz isim üretilir.
 - Çöp kutusuna taşınan belgenin önceki uygulama yolu ayrıca saklanır.
 - Kalıcı silme yalnızca PDF-REME'nin kendi `trash/` alanıyla sınırlandırılır.
 - Restore işleminde aynı isimli dosyanın üzerine yazılmaz.
@@ -280,6 +483,15 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 ### İçe aktarma
 
 `PDF` • `DOC` • `DOCX` • `PPT` • `PPTX` • `JPG` • `JPEG` • `PNG`
+
+### Mevcut PDF işlemleri
+
+- PDF Merge
+- PDF Split
+- Seçili sayfaları dışa aktarma
+- Sayfa sıralama
+- Sayfa yer değiştirme
+- Sayfa silme
 
 ### V1 dönüşüm hedefleri
 
@@ -326,16 +538,40 @@ src/pdf_reme/
 
 Temel amaç, UI katmanının SQLAlchemy, dosya sistemi veya PDF motoru gibi altyapı detaylarına doğrudan bağımlı olmamasıdır.
 
-Çöp kutusu özelliğinde bu ayrım örneğin şöyle uygulanır:
+Örnek akışlar:
 
 ```text
 Presentation (ileride PySide6)
         ↓
-TrashService
+Application Service / Use Case
         ↓
-DocumentRepository + TrashFileManager
+Repository + Infrastructure Service
         ↓
-SQLite + Dosya Sistemi
+SQLite + Dosya Sistemi + pypdf
+```
+
+Merge örneği:
+
+```text
+Presentation
+    ↓
+MergePdfsUseCase
+    ↓
+PdfMergeService + DocumentRepository
+    ↓
+pypdf + generated/ + SQLite
+```
+
+Page Edit örneği:
+
+```text
+Presentation
+    ↓
+EditPdfPagesUseCase
+    ↓
+PdfPageEditService + DocumentRepository
+    ↓
+pypdf + generated/ + SQLite
 ```
 
 ---
@@ -351,7 +587,7 @@ python -m pytest -v
 Güncel geliştirme checkpoint'i:
 
 ```text
-95 passed
+169 passed
 0 failed
 ```
 
@@ -380,22 +616,48 @@ Testlerde örnek olarak şu senaryolar doğrulanmaktadır:
 - 29 günlük kaydın korunması,
 - tam 30 günlük ve daha eski kayıtların temizleme kapsamına alınması,
 - Alembic migration upgrade / downgrade regresyonu,
-- gerçek PDF ile trash → restore → permanent delete akışı,
+- Merge işleminde kullanıcı sırasının korunması,
+- Merge işleminde kaynak PDF'lerin değişmemesi,
+- Merge hata durumunda yarım çıktının temizlenmesi,
+- Split sayfa seçim ifadelerinin doğru ayrıştırılması,
+- Split işleminde seçili sayfaların doğru sırada çıkarılması,
+- iki / dört / N parçaya bölmede hiçbir sayfanın kaybolmaması,
+- özel sayfa gruplarının ayrı çıktılar oluşturması,
+- reorder işleminde tüm sayfaların tam bir kez bulunması,
+- swap işleminde yalnızca seçilen iki sayfanın yer değiştirmesi,
+- delete işleminde seçilen sayfaların kaldırılması,
+- bütün sayfaların silinmesinin engellenmesi,
+- generated dosyalarda aynı isim çakışmasının güvenli çözülmesi,
+- generated dosya adlarında path traversal girişlerinin reddedilmesi,
+- generated DB kayıt hatasında fiziksel çıktının temizlenmesi,
+- gerçek Merge / Split / Page Edit akışları,
 - genel regresyon kontrolleri.
 
-Gerçek çöp kutusu akışını manuel olarak doğrulamak için:
+### Manuel gerçek dosya testleri
+
+Çöp kutusu:
 
 ```bash
 python scripts/manual_trash_test.py
 ```
 
-Başarılı akış sonunda:
+Merge:
 
-```text
-SONUÇ: GERÇEK DOSYA TESTİ BAŞARILI
+```bash
+python scripts/manual_merge_test.py
 ```
 
-çıktısı alınır.
+Split:
+
+```bash
+python scripts/manual_split_test.py
+```
+
+Sayfa düzenleme:
+
+```bash
+python scripts/manual_page_edit_test.py
+```
 
 ---
 
@@ -486,6 +748,14 @@ Documents/PDF-REME/trash/
 
 altında tutulur ve uygulama dışından Dosya Gezgini ile de erişilebilir.
 
+Merge, Split ve Page Edit sonucunda oluşturulan yeni PDF'ler:
+
+```text
+Documents/PDF-REME/library/generated/
+```
+
+altında tutulur.
+
 ---
 
 ## Yol Haritası
@@ -505,23 +775,36 @@ altında tutulur ve uygulama dışından Dosya Gezgini ile de erişilebilir.
 - [x] Çöp kutusu / Restore
 - [x] Kalıcı silme / Çöp kutusunu temizleme
 - [x] 30 günlük çöp kutusu retention kontrolü
-- [ ] PDF görüntüleme
-- [ ] Merge / Split
-- [ ] Sayfa işlemleri
+- [x] PDF Merge
+- [x] PDF Split
+- [x] Seçili sayfaları dışa aktarma
+- [x] Sayfa yeniden sıralama
+- [x] İki sayfanın yerini değiştirme
+- [x] Sayfa silme
+- [ ] Sayfa döndürme
+- [ ] Sayfa çoğaltma
+- [ ] Başka PDF'den sayfa ekleme
 - [ ] Undo / Redo
 - [ ] Görsellerden PDF
 - [ ] Office → PDF
 - [ ] Autosave / Session recovery
+- [ ] Startup maintenance / 30 günlük trash cleanup bağlantısı
+- [ ] Backend final E2E / kapanış
 
 ### Frontend
 
 - [x] Görsel tasarım dili / konsept çalışmaları
+- [ ] Stitch ile final ekran tasarımları
 - [ ] PySide6 uygulama shell'i
 - [ ] Ana Sayfa
 - [ ] Kütüphane
+- [ ] Çöp Kutusu
+- [ ] PDF Viewer
+- [ ] Merge ekranı
+- [ ] Split ekranı
 - [ ] PDF Düzenleyici
 - [ ] Dönüştürme ekranları
-- [ ] Light / Dark tema
+- [ ] Tema altyapısı
 - [ ] Backend entegrasyonu
 
 ### Release
@@ -529,6 +812,36 @@ altında tutulur ve uygulama dışından Dosya Gezgini ile de erişilebilir.
 - [ ] Windows Setup
 - [ ] Windows Portable
 - [ ] Linux paketi
+- [ ] Final README / ekran görüntüleri
+- [ ] GitHub Release
+
+---
+
+## Sıradaki Geliştirme Aşamaları
+
+Backend'in ana omurgası tamamlanmış durumdadır. Sonraki geliştirme sırası genel olarak:
+
+```text
+Sayfa Rotate / Duplicate / Insert
+        ↓
+Undo / Redo altyapısı
+        ↓
+JPG / PNG → PDF
+        ↓
+Word / PowerPoint → PDF
+        ↓
+Autosave / Recovery / Logging / Startup bakım işleri
+        ↓
+Backend final E2E ve regresyon
+        ↓
+Stitch UI tasarımı
+        ↓
+PySide6 frontend
+        ↓
+Backend entegrasyonu
+        ↓
+Paketleme ve Release
+```
 
 ---
 
