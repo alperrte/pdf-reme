@@ -19,7 +19,7 @@ Belgelerinizi görüntüleyin, düzenleyin, birleştirin, bölün ve dönüştü
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/UI-PySide6-41CD52?logo=qt&logoColor=white" />
   <img src="https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-169%20Passing-success" />
+  <img src="https://img.shields.io/badge/Tests-191%20Passing-success" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-5A5A5A" />
   <img src="https://img.shields.io/badge/License-Apache--2.0-blue" />
   <img src="https://img.shields.io/badge/Status-Active%20Development-orange" />
@@ -119,16 +119,17 @@ Backend'de şu işlemler tamamlanmıştır:
 - [x] Sayfaları istenilen sıraya göre yeniden sıralama
 - [x] İki sayfanın yerini değiştirme
 - [x] Seçilen sayfaları silme
+- [x] Seçilen sayfaları döndürme
+- [x] Seçilen sayfaları çoğaltma
+- [x] Başka PDF'den seçili sayfaları ekleme
+- [x] Boş sayfa ekleme
 - [x] Seçili sayfaları yeni PDF olarak dışa aktarma
+- [x] Undo / Redo işlem geçmişi
 - [x] Kaynak PDF'yi değiştirmeden yeni çıktı üretme
 - [x] Çıktıları `generated` kütüphanesine kaydetme
 
 Planlanan devam özellikleri:
 
-- [ ] Sayfa döndürme
-- [ ] Sayfa çoğaltma
-- [ ] Başka PDF'den sayfa ekleme
-- [ ] Undo / Redo
 - [ ] Save / Save As kullanıcı akışı
 - [ ] PySide6 arayüzünde drag & drop sayfa sıralama
 
@@ -331,7 +332,7 @@ python scripts/manual_split_test.py
 
 ## Sayfa Düzenleme Backend'i
 
-PDF-REME'nin sayfa tabanlı düzenleme altyapısında ilk üç temel işlem tamamlanmıştır.
+PDF-REME'nin sayfa tabanlı düzenleme altyapısındaki temel backend işlemleri ve Undo / Redo geçmişi tamamlanmıştır.
 
 ### Sayfa sıralama
 
@@ -371,7 +372,27 @@ Sil: 2,4
 
 Tüm sayfaların aynı işlemde silinmesine izin verilmez.
 
-Üç işlemde de:
+### Sayfa döndürme
+
+`rotate_pages()` seçilen sayfaları 90 derecenin katlarıyla döndürür. Negatif açılar desteklenir ve çıktıdaki dönüş açısı normalize edilir.
+
+### Sayfa çoğaltma
+
+`duplicate_pages()` seçilen her sayfanın bir kopyasını orijinal sayfanın hemen arkasına ekler.
+
+### Başka PDF'den sayfa ekleme
+
+`insert_pages()` başka bir PDF'den seçilen sayfaları, seçim sırasını koruyarak belgenin başına veya belirtilen sayfanın arkasına ekler.
+
+### Boş sayfa ekleme
+
+`insert_blank_page()` referans sayfanın boyutlarını kullanarak belgenin başına veya belirtilen sayfanın arkasına boş bir sayfa ekler.
+
+### Undo / Redo geçmişi
+
+`PageEditHistory` ilk dosyayı ve üretilen düzenleme çıktılarını durum geçmişinde tutar. Geri alma sonrasında yeni bir işlem yapılırsa artık geçerli olmayan redo zinciri temizlenir.
+
+Tüm PDF düzenleme işlemlerinde:
 
 - kaynak PDF korunur,
 - çıktı `library/generated/` altında yeni bir PDF olarak oluşturulur,
@@ -386,15 +407,20 @@ Kullanılan generation type değerleri:
 page_reorder
 page_swap
 page_delete
+page_rotate
+page_duplicate
+page_insert
+page_blank_insert
 ```
 
 Gerçek dosya testi:
 
 ```bash
 python scripts/manual_page_edit_test.py
+python scripts/manual_page_edit_test2.py
 ```
 
-Bu script gerçek bir PDF üzerinde reorder, swap ve delete işlemlerini çalıştırır; kaynak PDF'nin değişmediğini ve generated DB kayıtlarının oluştuğunu doğrular.
+İlk script reorder, swap ve delete işlemlerini; Gün 11 script'i ise rotate, duplicate, başka PDF'den sayfa ekleme, boş sayfa ekleme ve Undo / Redo geçmişini gerçek PDF'lerle doğrular. Her iki akışta da kaynak dosyaların değişmediği ve generated DB kayıtlarının oluştuğu kontrol edilir.
 
 ---
 
@@ -410,10 +436,12 @@ PDF-REME şu anda aktif olarak geliştirilmektedir.
 
 Backend-first yaklaşımıyla önce çekirdek iş akışları ve güvenli veri yönetimi tamamlanmakta, ardından Stitch ile hazırlanan tasarım dili PySide6 arayüzüne uygulanacaktır.
 
+**Gün 11 tamamlandı:** Sayfa döndürme, çoğaltma, başka PDF'den sayfa ekleme, boş sayfa ekleme ve Undo / Redo geçmişi backend'e eklendi.
+
 ### Güncel checkpoint
 
 ```text
-169 passed
+191 passed
 0 failed
 ```
 
@@ -448,6 +476,11 @@ Backend-first yaklaşımıyla önce çekirdek iş akışları ve güvenli veri y
 - [x] Sayfa reorder
 - [x] Sayfa swap
 - [x] Sayfa delete
+- [x] Sayfa rotate
+- [x] Sayfa duplicate
+- [x] Başka PDF'den sayfa ekleme
+- [x] Boş sayfa ekleme
+- [x] Undo / Redo işlem geçmişi
 - [x] Merge / Split / Page Edit gerçek dosya testleri
 - [x] Otomatik unit + integration testleri
 
@@ -492,6 +525,11 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 - Sayfa sıralama
 - Sayfa yer değiştirme
 - Sayfa silme
+- Sayfa döndürme
+- Sayfa çoğaltma
+- Başka PDF'den sayfa ekleme
+- Boş sayfa ekleme
+- Undo / Redo işlem geçmişi
 
 ### V1 dönüşüm hedefleri
 
@@ -587,7 +625,7 @@ python -m pytest -v
 Güncel geliştirme checkpoint'i:
 
 ```text
-169 passed
+191 passed
 0 failed
 ```
 
@@ -627,6 +665,11 @@ Testlerde örnek olarak şu senaryolar doğrulanmaktadır:
 - swap işleminde yalnızca seçilen iki sayfanın yer değiştirmesi,
 - delete işleminde seçilen sayfaların kaldırılması,
 - bütün sayfaların silinmesinin engellenmesi,
+- yalnızca seçilen sayfaların 90° katlarıyla döndürülmesi,
+- seçilen sayfaların doğru konumlarda çoğaltılması,
+- başka bir PDF'den seçilen sayfaların istenen sırayla eklenmesi,
+- belgenin başına veya belirtilen konuma boş sayfa eklenmesi,
+- Undo / Redo durum geçişleri ve yeni işlemde redo zincirinin temizlenmesi,
 - generated dosyalarda aynı isim çakışmasının güvenli çözülmesi,
 - generated dosya adlarında path traversal girişlerinin reddedilmesi,
 - generated DB kayıt hatasında fiziksel çıktının temizlenmesi,
@@ -657,6 +700,7 @@ Sayfa düzenleme:
 
 ```bash
 python scripts/manual_page_edit_test.py
+python scripts/manual_page_edit_test2.py
 ```
 
 ---
@@ -781,10 +825,11 @@ altında tutulur.
 - [x] Sayfa yeniden sıralama
 - [x] İki sayfanın yerini değiştirme
 - [x] Sayfa silme
-- [ ] Sayfa döndürme
-- [ ] Sayfa çoğaltma
-- [ ] Başka PDF'den sayfa ekleme
-- [ ] Undo / Redo
+- [x] Sayfa döndürme
+- [x] Sayfa çoğaltma
+- [x] Başka PDF'den sayfa ekleme
+- [x] Boş sayfa ekleme
+- [x] Undo / Redo
 - [ ] Görsellerden PDF
 - [ ] Office → PDF
 - [ ] Autosave / Session recovery
@@ -822,10 +867,6 @@ altında tutulur.
 Backend'in ana omurgası tamamlanmış durumdadır. Sonraki geliştirme sırası genel olarak:
 
 ```text
-Sayfa Rotate / Duplicate / Insert
-        ↓
-Undo / Redo altyapısı
-        ↓
 JPG / PNG → PDF
         ↓
 Word / PowerPoint → PDF

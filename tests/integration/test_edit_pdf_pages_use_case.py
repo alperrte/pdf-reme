@@ -490,3 +490,158 @@ def test_edit_removes_output_when_database_save_fails(
 
     session.close()
     engine.dispose()
+
+def test_rotate_pages_creates_generated_document(tmp_path):
+    engine, session, repository, use_case, paths = (
+        create_test_environment(tmp_path)
+    )
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102, 103],
+    )
+
+    document = use_case.rotate_pages(
+        source,
+        [2],
+        90,
+        "rotated.pdf",
+    )
+
+    reader = PdfReader(document.stored_path)
+
+    assert reader.pages[1].rotation == 90
+    assert document.generation_type == "page_rotate"
+    assert document.page_count == 3
+
+    session.close()
+    engine.dispose()
+
+
+def test_duplicate_pages_creates_generated_document(tmp_path):
+    engine, session, repository, use_case, paths = (
+        create_test_environment(tmp_path)
+    )
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102, 103],
+    )
+
+    document = use_case.duplicate_pages(
+        source,
+        [2],
+        "duplicated.pdf",
+    )
+
+    assert document.generation_type == "page_duplicate"
+    assert document.page_count == 4
+
+    session.close()
+    engine.dispose()
+
+
+def test_insert_pages_creates_generated_document(tmp_path):
+    engine, session, repository, use_case, paths = (
+        create_test_environment(tmp_path)
+    )
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102],
+    )
+
+    other = create_pdf(
+        tmp_path / "other.pdf",
+        [201, 202],
+    )
+
+    document = use_case.insert_pages(
+        source,
+        other,
+        [2],
+        1,
+        "inserted.pdf",
+    )
+
+    assert get_page_widths(
+        Path(document.stored_path)
+    ) == [
+        101,
+        202,
+        102,
+    ]
+
+    assert document.generation_type == "page_insert"
+    assert document.page_count == 3
+
+    session.close()
+    engine.dispose()
+
+
+def test_insert_blank_page_creates_generated_document(tmp_path):
+    engine, session, repository, use_case, paths = (
+        create_test_environment(tmp_path)
+    )
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102],
+    )
+
+    document = use_case.insert_blank_page(
+        source,
+        1,
+        "blank.pdf",
+    )
+
+    assert document.generation_type == "page_blank_insert"
+    assert document.page_count == 3
+
+    session.close()
+    engine.dispose()
+
+
+def test_insert_blank_page_cleans_output_when_db_fails(
+    tmp_path,
+    monkeypatch,
+):
+    engine, session, repository, use_case, paths = (
+        create_test_environment(tmp_path)
+    )
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102],
+    )
+
+    def failing_add(document):
+        raise RuntimeError(
+            "Simulated database failure"
+        )
+
+    monkeypatch.setattr(
+        repository,
+        "add",
+        failing_add,
+    )
+
+    output = (
+        paths.generated_dir
+        / "db-error.pdf"
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Simulated database failure",
+    ):
+        use_case.insert_blank_page(
+            source,
+            1,
+            "db-error.pdf",
+        )
+
+    assert not output.exists()
+
+    session.close()
+    engine.dispose()

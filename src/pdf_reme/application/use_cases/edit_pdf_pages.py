@@ -213,3 +213,112 @@ class EditPdfPagesUseCase:
     ) -> None:
         if output_path.exists():
             output_path.unlink()
+
+    def rotate_pages(
+    self,
+    input_path: str | Path,
+    page_numbers: list[int],
+    degrees: int,
+    display_name: str,
+    ) -> Document:
+        clean_name = self._validate_file_name(display_name)
+        output_path = self._create_output_path(clean_name)
+
+        try:
+            self.page_edit_service.rotate_pages(
+                input_path=input_path,
+                page_numbers=page_numbers,
+                degrees=degrees,
+                output_path=output_path,
+            )
+
+            return self._save_generated_document(
+                output_path,
+                "page_rotate",
+            )
+
+        except Exception:
+            self._cleanup_output(output_path)
+            raise
+
+
+    def duplicate_pages(
+        self,
+        input_path: str | Path,
+        page_numbers: list[int],
+        display_name: str,
+    ) -> Document:
+        clean_name = self._validate_file_name(display_name)
+        output_path = self._create_output_path(clean_name)
+
+        try:
+            self.page_edit_service.duplicate_pages(
+                input_path=input_path,
+                page_numbers=page_numbers,
+                output_path=output_path,
+            )
+
+            return self._save_generated_document(
+                output_path,
+                "page_duplicate",
+            )
+
+        except Exception:
+            self._cleanup_output(output_path)
+            raise
+
+
+    def insert_pages(
+        self,
+        input_path: str | Path,
+        insert_pdf_path: str | Path,
+        source_page_numbers: list[int],
+        after_page: int,
+        display_name: str,
+    ) -> Document:
+        clean_name = self._validate_file_name(display_name)
+        output_path = self._create_output_path(clean_name)
+
+        try:
+            self.page_edit_service.insert_pages(
+                input_path=input_path,
+                insert_pdf_path=insert_pdf_path,
+                source_page_numbers=source_page_numbers,
+                after_page=after_page,
+                output_path=output_path,
+            )
+
+            return self._save_generated_document(
+                output_path,
+                "page_insert",
+            )
+
+        except Exception:
+            self._cleanup_output(output_path)
+            raise
+
+
+    def insert_blank_page(
+        self,
+        input_path: str | Path,
+        after_page: int,
+        display_name: str,
+    ) -> Document:
+        clean_name = self._validate_file_name(display_name)
+        output_path = self._create_output_path(clean_name)
+
+        try:
+            self.page_edit_service.insert_blank_page(
+                input_path=input_path,
+                after_page=after_page,
+                output_path=output_path,
+            )
+
+            return self._save_generated_document(
+                output_path,
+                "page_blank_insert",
+            )
+
+        except Exception:
+            self._cleanup_output(output_path)
+            raise

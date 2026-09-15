@@ -487,3 +487,270 @@ def test_delete_pages_ignores_duplicate_page_numbers(tmp_path):
         101,
         103,
     ]
+
+
+def test_rotate_selected_pages(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102, 103, 104],
+    )
+
+    output = tmp_path / "rotated.pdf"
+
+    service.rotate_pages(
+        input_path=source,
+        page_numbers=[2, 4],
+        degrees=90,
+        output_path=output,
+    )
+
+    reader = PdfReader(str(output))
+
+    assert [
+        page.rotation
+        for page in reader.pages
+    ] == [0, 90, 0, 90]
+
+
+def test_rotate_accepts_negative_90_degrees(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102],
+    )
+
+    output = tmp_path / "rotated.pdf"
+
+    service.rotate_pages(
+        source,
+        [1],
+        -90,
+        output,
+    )
+
+    reader = PdfReader(str(output))
+
+    assert reader.pages[0].rotation == 270
+
+
+def test_rotate_rejects_non_90_degree_angle(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="90 derecenin katı",
+    ):
+        service.rotate_pages(
+            source,
+            [1],
+            45,
+            tmp_path / "output.pdf",
+        )
+
+
+def test_rotate_rejects_invalid_page_number(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Geçersiz sayfa numarası",
+    ):
+        service.rotate_pages(
+            source,
+            [3],
+            90,
+            tmp_path / "output.pdf",
+        )
+
+
+def test_duplicate_selected_pages(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102, 103, 104],
+    )
+
+    output = tmp_path / "duplicated.pdf"
+
+    service.duplicate_pages(
+        source,
+        [2, 4],
+        output,
+    )
+
+    assert get_page_widths(output) == [
+        101,
+        102,
+        102,
+        103,
+        104,
+        104,
+    ]
+
+
+def test_duplicate_rejects_empty_selection(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Çoğaltılacak en az bir sayfa",
+    ):
+        service.duplicate_pages(
+            source,
+            [],
+            tmp_path / "output.pdf",
+        )
+
+
+def test_insert_pages_from_another_pdf(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102, 103],
+    )
+
+    other = create_pdf(
+        tmp_path / "other.pdf",
+        [201, 202, 203],
+    )
+
+    output = tmp_path / "inserted.pdf"
+
+    service.insert_pages(
+        input_path=source,
+        insert_pdf_path=other,
+        source_page_numbers=[3, 1],
+        after_page=2,
+        output_path=output,
+    )
+
+    assert get_page_widths(output) == [
+        101,
+        102,
+        203,
+        201,
+        103,
+    ]
+
+
+def test_insert_pages_can_insert_at_beginning(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102],
+    )
+
+    other = create_pdf(
+        tmp_path / "other.pdf",
+        [201, 202],
+    )
+
+    output = tmp_path / "inserted.pdf"
+
+    service.insert_pages(
+        source,
+        other,
+        [2],
+        0,
+        output,
+    )
+
+    assert get_page_widths(output) == [
+        202,
+        101,
+        102,
+    ]
+
+
+def test_insert_pages_rejects_invalid_source_page(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101],
+    )
+
+    other = create_pdf(
+        tmp_path / "other.pdf",
+        [201],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Geçersiz kaynak sayfa numarası",
+    ):
+        service.insert_pages(
+            source,
+            other,
+            [2],
+            1,
+            tmp_path / "output.pdf",
+        )
+
+
+def test_insert_blank_page(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102, 103],
+    )
+
+    output = tmp_path / "blank.pdf"
+
+    service.insert_blank_page(
+        source,
+        2,
+        output,
+    )
+
+    reader = PdfReader(str(output))
+
+    assert len(reader.pages) == 4
+
+    assert get_page_widths(output) == [
+        101,
+        102,
+        102,
+        103,
+    ]
+
+
+def test_insert_blank_page_rejects_invalid_position(tmp_path):
+    service = PdfPageEditService()
+
+    source = create_pdf(
+        tmp_path / "source.pdf",
+        [101, 102],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Geçersiz ekleme konumu",
+    ):
+        service.insert_blank_page(
+            source,
+            3,
+            tmp_path / "output.pdf",
+        )
