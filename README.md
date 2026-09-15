@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/UI-PySide6-41CD52?logo=qt&logoColor=white" alt="PySide6" />
   <img src="https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-237%20Passing-success" alt="237 test başarılı" />
+  <img src="https://img.shields.io/badge/Tests-253%20Passing-success" alt="253 test başarılı" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-5A5A5A" alt="Windows ve Linux" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue" alt="Apache 2.0 lisansı" /></a>
   <img src="https://img.shields.io/badge/Status-Active%20Development-orange" alt="Aktif geliştirme" />
@@ -42,7 +42,7 @@ Temel hedef; PDF ve benzeri belgeleri işlemek için web tabanlı araçlara, bul
 
 | 🔒 Gizlilik | 🧰 Güçlü PDF araçları | 🗃️ Yerel kütüphane | 🧪 Güvenilir altyapı |
 |---|---|---|---|
-| Dosyalar üçüncü taraf servislere yüklenmez. | PDF araçları, görsel ve Office dönüşümleri bir arada. | Belgeler, favoriler ve çöp kutusu cihazınızda yönetilir. | Katmanlı mimari ve **237 başarılı test**. |
+| Dosyalar üçüncü taraf servislere yüklenmez. | PDF araçları, sıkıştırma ve belge dönüşümleri bir arada. | Belgeler, favoriler ve çöp kutusu cihazınızda yönetilir. | Katmanlı mimari ve **253 başarılı test**. |
 
 ---
 
@@ -77,7 +77,7 @@ Mevcut backend altyapısında:
 - favori belgeler takip edilebilir,
 - son kullanılan belgeler `last_opened_at` üzerinden sıralanabilir,
 - belgeler çöp kutusuna taşınabilir ve geri yüklenebilir,
-- PDF araçları, görsel ve Office dönüşümlerinden üretilen dosyalar `generated` kütüphanesine kaydedilebilir,
+- PDF araçları, sıkıştırma, görsel ve Office dönüşümlerinden üretilen dosyalar `generated` kütüphanesine kaydedilebilir,
 - oluşturulan belgeler için SHA-256, dosya boyutu, sayfa sayısı ve üretim türü metadata olarak tutulabilir,
 - fiziksel dosyalar dosya sisteminde, metadata bilgileri SQLite üzerinde tutulur.
 
@@ -443,6 +443,34 @@ python scripts/manual_office_to_pdf_test.py "test.docx" "test.pptx" "test.xlsx"
 
 ---
 
+## 🗜️ PDF Sıkıştırma
+
+Gün 14 ile kaynak belgeyi koruyan PDF sıkıştırma backend'i tamamlandı.
+
+| Profil | Yaklaşım |
+|---|---|
+| `light` | PDF yapısını ve görsel kalitesini mümkün olduğunca koruyan hafif optimizasyon |
+| `balanced` | Dosya boyutu ile görsel kalite arasında dengeli optimizasyon |
+| `strong` | Daha agresif görsel optimizasyonu ve gerektiğinde adaptif raster fallback |
+
+Sıkıştırma akışında:
+
+- PDF akışları ve uygun görseller `pikepdf` ile optimize edilir,
+- çıktı geçerliliği ve sayfa sayısının değişmediği doğrulanır,
+- şifreli veya geçersiz kaynaklar kontrollü biçimde reddedilir,
+- sıkıştırılmış çıktı daha büyükse kaynak belge güvenli fallback olarak kopyalanır,
+- orijinal ve yeni boyut ile kazanılan alan ve oran raporlanır,
+- çıktı `pdf_compress_light`, `pdf_compress_balanced` veya `pdf_compress_strong` türüyle kütüphaneye kaydedilir,
+- hata durumunda geçici ve yarım çıktılar temizlenir.
+
+Gerçek dosya testi:
+
+```bash
+python scripts/manual_pdf_compression_test.py "C:\Test\test.pdf"
+```
+
+---
+
 ## 🚧 Aktif Geliştirme
 
 <div align="center">
@@ -453,12 +481,12 @@ PDF-REME şu anda aktif olarak geliştirilmektedir.
 
 Backend-first yaklaşımla çekirdek iş akışları ve güvenli veri yönetimi geliştirilmektedir.
 
-**Gün 13 tamamlandı:** Word, PowerPoint ve Excel → PDF dönüşümleri backend'e eklendi.
+**Gün 14 tamamlandı:** Hafif, dengeli ve güçlü PDF sıkıştırma profilleri backend'e eklendi.
 
 ### ✅ Güncel checkpoint
 
 ```text
-237 passed
+253 passed
 0 failed
 ```
 
@@ -472,6 +500,7 @@ Backend-first yaklaşımla çekirdek iş akışları ve güvenli veri yönetimi 
 - [x] JPG / JPEG / PNG → PDF
 - [x] PDF → JPG
 - [x] Word / PowerPoint / Excel → PDF
+- [x] PDF sıkıştırma ve boyut kazanımı raporlama
 - [x] Otomatik ve gerçek dosya testleri
 
 ---
@@ -525,6 +554,7 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 - DOC / DOCX → PDF
 - PPT / PPTX → PDF
 - XLS / XLSX → PDF
+- Hafif / dengeli / güçlü PDF sıkıştırma
 
 ---
 
@@ -536,6 +566,7 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 | Masaüstü UI | PySide6 + Qt Widgets |
 | Stil | QSS |
 | PDF işlemleri | pypdf |
+| PDF sıkıştırma | pikepdf + Pillow + QtPdf |
 | PDF görüntüleme | PySide6 QtPdf |
 | Görsel işlemleri | Pillow |
 | Office → PDF | LibreOffice Runtime |
@@ -626,6 +657,18 @@ OfficeToPdfService + DocumentRepository
 LibreOffice Runtime + generated/ + SQLite
 ```
 
+PDF sıkıştırma örneği:
+
+```text
+Presentation
+    ↓
+CompressPdfUseCase
+    ↓
+PdfCompressionService + PdfCompressionEngine
+    ↓
+pikepdf + Pillow + QtPdf + generated/ + SQLite
+```
+
 ---
 
 ## 🧪 Testler
@@ -639,7 +682,7 @@ python -m pytest -v
 Güncel geliştirme checkpoint'i:
 
 ```text
-237 passed
+253 passed
 0 failed
 ```
 
@@ -654,6 +697,9 @@ Test paketi başlıca şu alanları kapsar:
 - DPI, kalite, geçersiz girdi ve şifreli PDF kontrolleri,
 - Word, PowerPoint ve Excel belgelerinde doğru generation type üretimi,
 - LibreOffice runtime keşfi, zaman aşımı ve geçersiz çıktı kontrolleri,
+- üç PDF sıkıştırma profilinin geçerli çıktı üretmesi,
+- sayfa sayısının korunması ve çıktının kaynaktan büyük olmaması,
+- şifreli PDF, geçersiz profil ve path traversal kontrolleri,
 - hata durumunda fiziksel çıktıların temizlenmesi,
 - kaynak dosyaların değişmeden kalması ve genel regresyon kontrolleri.
 
@@ -694,6 +740,12 @@ Office → PDF:
 
 ```bash
 python scripts/manual_office_to_pdf_test.py "test.docx" "test.pptx" "test.xlsx"
+```
+
+PDF sıkıştırma:
+
+```bash
+python scripts/manual_pdf_compression_test.py "C:\Test\test.pdf"
 ```
 
 ---
@@ -785,7 +837,7 @@ Documents/PDF-REME/trash/
 
 altında tutulur ve uygulama dışından Dosya Gezgini ile de erişilebilir.
 
-Merge, Split, Page Edit, görsel ve Office dönüşümleri sonucunda oluşturulan dosyalar:
+Merge, Split, Page Edit, sıkıştırma, görsel ve Office dönüşümleri sonucunda oluşturulan dosyalar:
 
 ```text
 Documents/PDF-REME/library/generated/
@@ -802,6 +854,7 @@ Güncel odak, tamamlanan çekirdek altyapıyı masaüstü deneyimine taşımak v
 - [x] Yerel veri, kütüphane ve güvenli dosya yönetimi
 - [x] Temel PDF araçları ve sayfa düzenleme backend'i
 - [x] PDF ↔ görsel ve Office → PDF dönüşüm altyapısı
+- [x] PDF sıkıştırma altyapısı
 - [ ] Masaüstü arayüzü ve backend entegrasyonu
 - [ ] Dağıtım paketleri ve ilk kararlı sürüm
 
