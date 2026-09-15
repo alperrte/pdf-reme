@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/UI-PySide6-41CD52?logo=qt&logoColor=white" alt="PySide6" />
   <img src="https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-213%20Passing-success" alt="213 test başarılı" />
+  <img src="https://img.shields.io/badge/Tests-237%20Passing-success" alt="237 test başarılı" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-5A5A5A" alt="Windows ve Linux" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue" alt="Apache 2.0 lisansı" /></a>
   <img src="https://img.shields.io/badge/Status-Active%20Development-orange" alt="Aktif geliştirme" />
@@ -42,7 +42,7 @@ Temel hedef; PDF ve benzeri belgeleri işlemek için web tabanlı araçlara, bul
 
 | 🔒 Gizlilik | 🧰 Güçlü PDF araçları | 🗃️ Yerel kütüphane | 🧪 Güvenilir altyapı |
 |---|---|---|---|
-| Dosyalar üçüncü taraf servislere yüklenmez. | Birleştirme, bölme, sayfa düzenleme ve görsel dönüşümü. | Belgeler, favoriler ve çöp kutusu cihazınızda yönetilir. | Katmanlı mimari ve **213 başarılı test**. |
+| Dosyalar üçüncü taraf servislere yüklenmez. | PDF araçları, görsel ve Office dönüşümleri bir arada. | Belgeler, favoriler ve çöp kutusu cihazınızda yönetilir. | Katmanlı mimari ve **237 başarılı test**. |
 
 ---
 
@@ -77,7 +77,7 @@ Mevcut backend altyapısında:
 - favori belgeler takip edilebilir,
 - son kullanılan belgeler `last_opened_at` üzerinden sıralanabilir,
 - belgeler çöp kutusuna taşınabilir ve geri yüklenebilir,
-- Merge, Split ve sayfa düzenleme işlemlerinden üretilen dosyalar `generated` kütüphanesine kaydedilebilir,
+- PDF araçları, görsel ve Office dönüşümlerinden üretilen dosyalar `generated` kütüphanesine kaydedilebilir,
 - oluşturulan belgeler için SHA-256, dosya boyutu, sayfa sayısı ve üretim türü metadata olarak tutulabilir,
 - fiziksel dosyalar dosya sisteminde, metadata bilgileri SQLite üzerinde tutulur.
 
@@ -419,6 +419,30 @@ python scripts/manual_image_conversion_test.py
 
 ---
 
+## 📄 Office → PDF Dönüşümü
+
+Gün 13 ile Word, PowerPoint ve Excel belgelerini PDF'e dönüştüren backend akışı tamamlandı.
+
+- `DOC` / `DOCX` → PDF
+- `PPT` / `PPTX` → PDF
+- `XLS` / `XLSX` → PDF
+- LibreOffice'i headless modda ve izole geçici profille çalıştırma
+- Kurulu veya yapılandırılmış LibreOffice Runtime'ı otomatik bulma
+- Üretilen PDF'in boyutunu, geçerliliğini ve sayfa sayısını doğrulama
+- Kaynak belgeyi değiştirmeden benzersiz çıktı oluşturma
+- Çıktıyı `word_to_pdf`, `powerpoint_to_pdf` veya `excel_to_pdf` türüyle kütüphaneye kaydetme
+- Dönüşüm, zaman aşımı veya DB hatasında yarım çıktıyı temizleme
+
+Gerçek dosya testi üç örnek Office belgesiyle çalıştırılabilir:
+
+```bash
+python scripts/manual_office_to_pdf_test.py "test.docx" "test.pptx" "test.xlsx"
+```
+
+> Office dönüşümü için sistemde erişilebilir veya uygulama tarafından yapılandırılmış bir LibreOffice Runtime gerekir.
+
+---
+
 ## 🚧 Aktif Geliştirme
 
 <div align="center">
@@ -429,12 +453,12 @@ PDF-REME şu anda aktif olarak geliştirilmektedir.
 
 Backend-first yaklaşımla çekirdek iş akışları ve güvenli veri yönetimi geliştirilmektedir.
 
-**Gün 12 tamamlandı:** JPG / JPEG / PNG → PDF ve PDF → JPG dönüşümleri backend'e eklendi.
+**Gün 13 tamamlandı:** Word, PowerPoint ve Excel → PDF dönüşümleri backend'e eklendi.
 
 ### ✅ Güncel checkpoint
 
 ```text
-213 passed
+237 passed
 0 failed
 ```
 
@@ -447,6 +471,7 @@ Backend-first yaklaşımla çekirdek iş akışları ve güvenli veri yönetimi 
 - [x] Sayfa tabanlı PDF düzenleme ve Undo / Redo geçmişi
 - [x] JPG / JPEG / PNG → PDF
 - [x] PDF → JPG
+- [x] Word / PowerPoint / Excel → PDF
 - [x] Otomatik ve gerçek dosya testleri
 
 ---
@@ -497,6 +522,9 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 - Undo / Redo işlem geçmişi
 - JPG / JPEG / PNG → PDF
 - PDF → JPG
+- DOC / DOCX → PDF
+- PPT / PPTX → PDF
+- XLS / XLSX → PDF
 
 ---
 
@@ -510,6 +538,7 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 | PDF işlemleri | pypdf |
 | PDF görüntüleme | PySide6 QtPdf |
 | Görsel işlemleri | Pillow |
+| Office → PDF | LibreOffice Runtime |
 | Veritabanı | SQLite |
 | ORM | SQLAlchemy |
 | Migration | Alembic |
@@ -585,6 +614,18 @@ ImageToPdfService / PdfToImageService
 Pillow + QtPdf + generated/ + SQLite
 ```
 
+Office dönüşüm örneği:
+
+```text
+Presentation
+    ↓
+ConvertOfficeToPdfUseCase
+    ↓
+OfficeToPdfService + DocumentRepository
+    ↓
+LibreOffice Runtime + generated/ + SQLite
+```
+
 ---
 
 ## 🧪 Testler
@@ -598,7 +639,7 @@ python -m pytest -v
 Güncel geliştirme checkpoint'i:
 
 ```text
-213 passed
+237 passed
 0 failed
 ```
 
@@ -611,6 +652,8 @@ Test paketi başlıca şu alanları kapsar:
 - görsel sırasını ve şeffaflığı koruyan JPG / PNG → PDF dönüşümü,
 - tüm sayfaları veya seçilen sayfaları PDF → JPG dönüştürme,
 - DPI, kalite, geçersiz girdi ve şifreli PDF kontrolleri,
+- Word, PowerPoint ve Excel belgelerinde doğru generation type üretimi,
+- LibreOffice runtime keşfi, zaman aşımı ve geçersiz çıktı kontrolleri,
 - hata durumunda fiziksel çıktıların temizlenmesi,
 - kaynak dosyaların değişmeden kalması ve genel regresyon kontrolleri.
 
@@ -645,6 +688,12 @@ Görsel dönüşümleri:
 
 ```bash
 python scripts/manual_image_conversion_test.py
+```
+
+Office → PDF:
+
+```bash
+python scripts/manual_office_to_pdf_test.py "test.docx" "test.pptx" "test.xlsx"
 ```
 
 ---
@@ -736,7 +785,7 @@ Documents/PDF-REME/trash/
 
 altında tutulur ve uygulama dışından Dosya Gezgini ile de erişilebilir.
 
-Merge, Split, Page Edit ve görsel dönüşüm sonucunda oluşturulan dosyalar:
+Merge, Split, Page Edit, görsel ve Office dönüşümleri sonucunda oluşturulan dosyalar:
 
 ```text
 Documents/PDF-REME/library/generated/
@@ -752,7 +801,7 @@ Güncel odak, tamamlanan çekirdek altyapıyı masaüstü deneyimine taşımak v
 
 - [x] Yerel veri, kütüphane ve güvenli dosya yönetimi
 - [x] Temel PDF araçları ve sayfa düzenleme backend'i
-- [x] PDF ↔ görsel dönüşüm altyapısı
+- [x] PDF ↔ görsel ve Office → PDF dönüşüm altyapısı
 - [ ] Masaüstü arayüzü ve backend entegrasyonu
 - [ ] Dağıtım paketleri ve ilk kararlı sürüm
 
