@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/UI-PySide6-41CD52?logo=qt&logoColor=white" alt="PySide6" />
   <img src="https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-191%20Passing-success" alt="191 test başarılı" />
+  <img src="https://img.shields.io/badge/Tests-213%20Passing-success" alt="213 test başarılı" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-5A5A5A" alt="Windows ve Linux" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue" alt="Apache 2.0 lisansı" /></a>
   <img src="https://img.shields.io/badge/Status-Active%20Development-orange" alt="Aktif geliştirme" />
@@ -42,7 +42,7 @@ Temel hedef; PDF ve benzeri belgeleri işlemek için web tabanlı araçlara, bul
 
 | 🔒 Gizlilik | 🧰 Güçlü PDF araçları | 🗃️ Yerel kütüphane | 🧪 Güvenilir altyapı |
 |---|---|---|---|
-| Dosyalar üçüncü taraf servislere yüklenmez. | Birleştirme, bölme ve sayfa düzenleme tek uygulamada. | Belgeler, favoriler ve çöp kutusu cihazınızda yönetilir. | Katmanlı mimari ve **191 başarılı test**. |
+| Dosyalar üçüncü taraf servislere yüklenmez. | Birleştirme, bölme, sayfa düzenleme ve görsel dönüşümü. | Belgeler, favoriler ve çöp kutusu cihazınızda yönetilir. | Katmanlı mimari ve **213 başarılı test**. |
 
 ---
 
@@ -54,30 +54,12 @@ Temel hedef; PDF ve benzeri belgeleri işlemek için web tabanlı araçlara, bul
 
 > Yukarıdaki görsel, PDF-REME için hazırlanan **arayüz konseptidir**. PySide6 tabanlı gerçek arayüz geliştirme sürecinde bu tasarım dili referans alınacaktır.
 
-PDF-REME V1 ile hedeflenen deneyim:
+PDF-REME; günlük belge işlemlerini tek bir yerel masaüstü uygulamasında, sade bir arayüz ve güvenli dosya yönetimiyle sunmayı hedefler. Ürün yaklaşımının temelini dört ilke oluşturur:
 
-- PDF dosyalarını görüntüleme
-- PDF birleştirme ve bölme
-- PDF küçültme / sıkıştırma
-- Sayfa sıralama, silme, döndürme ve çoğaltma
-- İki sayfanın yerini değiştirme
-- Başka PDF'den sayfa ekleme
-- Boş sayfa ekleme
-- Seçili sayfaları yeni PDF olarak dışa aktarma
-- PDF → JPG
-- JPG / JPEG / PNG → PDF
-- DOC / DOCX → PDF
-- PPT / PPTX → PDF
-- PDF kilitleme / şifreleme
-- Doğru parola ile PDF kilidini açarak yeni şifresiz kopya oluşturma
-- Yerel belge kütüphanesi
-- Favoriler ve son kullanılanlar
-- Çöp kutusu ve geri yükleme
-- Undo / Redo
-- Türkçe öncelikli, i18n'e hazır yapı
-- İlerleyen aşamalar için tema altyapısı
-
-> Excel → PDF dönüşümü V1 için **değerlendirme aşamasındadır**; henüz kesin V1 kapsamına alınmamıştır.
+- **Yerel çalışma:** Belgeler varsayılan olarak cihazda kalır.
+- **Kaynak dosyayı koruma:** İşlemler yeni çıktılar üretir; orijinal dosyanın üzerine yazılmaz.
+- **Tek çalışma alanı:** PDF araçları, görsel dönüşümleri ve belge kütüphanesi birlikte çalışır.
+- **Sade deneyim:** Teknik ayrıntıları kullanıcıdan uzak tutan, Türkçe öncelikli bir arayüz hedeflenir.
 
 ---
 
@@ -98,17 +80,6 @@ Mevcut backend altyapısında:
 - Merge, Split ve sayfa düzenleme işlemlerinden üretilen dosyalar `generated` kütüphanesine kaydedilebilir,
 - oluşturulan belgeler için SHA-256, dosya boyutu, sayfa sayısı ve üretim türü metadata olarak tutulabilir,
 - fiziksel dosyalar dosya sisteminde, metadata bilgileri SQLite üzerinde tutulur.
-
-Planlanan kullanıcı arayüzü yapısı:
-
-- **Yüklenenler**
-- **Oluşturulanlar**
-- Favoriler
-- Son kullanılanlar
-- Arama ve filtreleme
-- Dosya türüne göre ayrım
-- Çöp kutusu
-- Yerel metadata yönetimi
 
 ---
 
@@ -133,11 +104,6 @@ Backend'de şu işlemler tamamlanmıştır:
 - [x] Undo / Redo işlem geçmişi
 - [x] Kaynak PDF'yi değiştirmeden yeni çıktı üretme
 - [x] Çıktıları `generated` kütüphanesine kaydetme
-
-Planlanan devam özellikleri:
-
-- [ ] Save / Save As kullanıcı akışı
-- [ ] PySide6 arayüzünde drag & drop sayfa sıralama
 
 > V1 kapsamında PDF içindeki mevcut metin ve nesnelerin Word benzeri biçimde düzenlenmesi hedeflenmemektedir.
 
@@ -422,7 +388,34 @@ python scripts/manual_page_edit_test.py
 python scripts/manual_page_edit_test2.py
 ```
 
-İlk script reorder, swap ve delete işlemlerini; Gün 11 script'i ise rotate, duplicate, başka PDF'den sayfa ekleme, boş sayfa ekleme ve Undo / Redo geçmişini gerçek PDF'lerle doğrular. Her iki akışta da kaynak dosyaların değişmediği ve generated DB kayıtlarının oluştuğu kontrol edilir.
+İlk script reorder, swap ve delete işlemlerini; ikinci script ise rotate, duplicate, başka PDF'den sayfa ekleme, boş sayfa ekleme ve Undo / Redo geçmişini gerçek PDF'lerle doğrular. Her iki akışta da kaynak dosyaların değişmediği ve generated DB kayıtlarının oluştuğu kontrol edilir.
+
+---
+
+## 🖼️ Görsel Dönüşümleri
+
+Gün 12 ile iki yönlü görsel dönüşüm altyapısı tamamlandı.
+
+### JPG / JPEG / PNG → PDF
+
+- Bir veya birden fazla görseli verilen sırayı koruyarak tek PDF'e dönüştürme
+- RGB, RGBA ve şeffaf PNG desteği
+- Kaynak görselleri değiştirmeden yeni çıktı üretme
+- Çıktıyı `generation_type = "images_to_pdf"` ile kütüphaneye kaydetme
+
+### PDF → JPG
+
+- PDF'in tamamını veya seçilen sayfalarını JPG olarak dışa aktarma
+- Seçilen sayfa sırasını koruma
+- DPI ve JPEG kalite ayarları
+- Her görseli `generation_type = "pdf_to_jpg"` ile ayrı belge olarak kaydetme
+- Hata durumunda yarım çıktıları temizleme
+
+Gerçek dosya testi:
+
+```bash
+python scripts/manual_image_conversion_test.py
+```
 
 ---
 
@@ -434,55 +427,27 @@ python scripts/manual_page_edit_test2.py
 
 PDF-REME şu anda aktif olarak geliştirilmektedir.
 
-Backend-first yaklaşımıyla önce çekirdek iş akışları ve güvenli veri yönetimi tamamlanmakta, ardından Stitch ile hazırlanan tasarım dili PySide6 arayüzüne uygulanacaktır.
+Backend-first yaklaşımla çekirdek iş akışları ve güvenli veri yönetimi geliştirilmektedir.
 
-**Gün 11 tamamlandı:** Sayfa döndürme, çoğaltma, başka PDF'den sayfa ekleme, boş sayfa ekleme ve Undo / Redo geçmişi backend'e eklendi.
+**Gün 12 tamamlandı:** JPG / JPEG / PNG → PDF ve PDF → JPG dönüşümleri backend'e eklendi.
 
 ### ✅ Güncel checkpoint
 
 ```text
-191 passed
+213 passed
 0 failed
 ```
 
 Şu anda tamamlanan temel altyapılar:
 
-- [x] SQLite + SQLAlchemy veri katmanı
-- [x] Repository pattern
-- [x] Alembic migration altyapısı
-- [x] Transaction / rollback yönetimi
-- [x] SHA-256 hesaplama
-- [x] Duplicate detection
-- [x] PDF ve görsel doğrulama
-- [x] DOCX / PPTX temel OOXML doğrulama
-- [x] Güvenli kütüphane kopyalama
-- [x] Gerçek PDF import akışı
-- [x] Metadata veritabanı kaydı
-- [x] Kütüphane servisleri
-- [x] Yüklenenler / Oluşturulanlar ayrımı
-- [x] Favoriler
-- [x] Son kullanılan belgeler
-- [x] Çöp kutusuna taşıma
-- [x] Geri yükleme
-- [x] Kalıcı silme
-- [x] Çöp kutusunu toplu temizleme
-- [x] 30 günlük çöp kutusu retention kontrolü
-- [x] Gerçek dosya ile trash / restore / permanent delete testi
-- [x] PDF Merge backend'i
-- [x] PDF Merge generated kütüphane entegrasyonu
-- [x] PDF Split / seçili sayfa çıkarma
-- [x] İkiye / dörde / N parçaya bölme
-- [x] Özel sayfa grupları
-- [x] Sayfa reorder
-- [x] Sayfa swap
-- [x] Sayfa delete
-- [x] Sayfa rotate
-- [x] Sayfa duplicate
-- [x] Başka PDF'den sayfa ekleme
-- [x] Boş sayfa ekleme
-- [x] Undo / Redo işlem geçmişi
-- [x] Merge / Split / Page Edit gerçek dosya testleri
-- [x] Otomatik unit + integration testleri
+- [x] SQLite, repository ve migration altyapısı
+- [x] Güvenli içe aktarma, doğrulama ve duplicate detection
+- [x] Yerel kütüphane, favoriler, son kullanılanlar ve çöp kutusu
+- [x] PDF birleştirme ve bölme
+- [x] Sayfa tabanlı PDF düzenleme ve Undo / Redo geçmişi
+- [x] JPG / JPEG / PNG → PDF
+- [x] PDF → JPG
+- [x] Otomatik ve gerçek dosya testleri
 
 ---
 
@@ -517,7 +482,7 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 
 `PDF` • `DOC` • `DOCX` • `PPT` • `PPTX` • `JPG` • `JPEG` • `PNG`
 
-### 🧰 Mevcut PDF işlemleri
+### 🧰 Mevcut işlemler
 
 - PDF Merge
 - PDF Split
@@ -530,17 +495,8 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 - Başka PDF'den sayfa ekleme
 - Boş sayfa ekleme
 - Undo / Redo işlem geçmişi
-
-### 🎯 V1 dönüşüm ve araç hedefleri
-
 - JPG / JPEG / PNG → PDF
 - PDF → JPG
-- DOC / DOCX → PDF
-- PPT / PPTX → PDF
-- PDF küçültme / sıkıştırma
-- PDF kilitleme / şifreleme
-- PDF kilidini açma
-- Excel → PDF **(opsiyonel / değerlendirme aşamasında)**
 
 ---
 
@@ -557,7 +513,6 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 | Veritabanı | SQLite |
 | ORM | SQLAlchemy |
 | Migration | Alembic |
-| Office → PDF | LibreOffice Runtime **(planlanan entegrasyon)** |
 | Test | pytest + pytest-qt |
 | Kod kalitesi | Ruff |
 | Lisans | Apache License 2.0 |
@@ -618,6 +573,18 @@ PdfPageEditService + DocumentRepository
 pypdf + generated/ + SQLite
 ```
 
+Görsel dönüşüm örneği:
+
+```text
+Presentation
+    ↓
+ConvertImagesToPdfUseCase / ConvertPdfToImagesUseCase
+    ↓
+ImageToPdfService / PdfToImageService
+    ↓
+Pillow + QtPdf + generated/ + SQLite
+```
+
 ---
 
 ## 🧪 Testler
@@ -631,56 +598,21 @@ python -m pytest -v
 Güncel geliştirme checkpoint'i:
 
 ```text
-191 passed
+213 passed
 0 failed
 ```
 
-Testlerde örnek olarak şu senaryolar doğrulanmaktadır:
+Test paketi başlıca şu alanları kapsar:
 
-- başarılı repository işlemleri,
-- migration upgrade / downgrade,
-- commit / rollback,
-- kaynak dosyanın korunması,
-- büyük dosyaların parça parça hashlenmesi,
-- bozuk PDF ve görsel reddi,
-- sahte DOCX / PPTX reddi,
-- duplicate detection,
-- güvenli `.part` kopyalama,
-- veritabanı hatasında fiziksel dosya temizliği,
-- gerçek import akışı,
-- yüklenen / oluşturulan belge ayrımı,
-- favori açma / kapama,
-- son kullanılan belgelerin sıralanması,
-- dosyanın fiziksel çöp kutusuna taşınması,
-- çöp kutusundan geri yükleme,
-- restore sırasında isim çakışmasının güvenli çözülmesi,
-- çöp kutusu dışındaki dosyaların kalıcı silinmesinin engellenmesi,
-- fiziksel dosya daha önce elle silinmişse DB kaydının temizlenmesi,
-- çöp kutusunun toplu temizlenmesi,
-- 29 günlük kaydın korunması,
-- tam 30 günlük ve daha eski kayıtların temizleme kapsamına alınması,
-- Alembic migration upgrade / downgrade regresyonu,
-- Merge işleminde kullanıcı sırasının korunması,
-- Merge işleminde kaynak PDF'lerin değişmemesi,
-- Merge hata durumunda yarım çıktının temizlenmesi,
-- Split sayfa seçim ifadelerinin doğru ayrıştırılması,
-- Split işleminde seçili sayfaların doğru sırada çıkarılması,
-- iki / dört / N parçaya bölmede hiçbir sayfanın kaybolmaması,
-- özel sayfa gruplarının ayrı çıktılar oluşturması,
-- reorder işleminde tüm sayfaların tam bir kez bulunması,
-- swap işleminde yalnızca seçilen iki sayfanın yer değiştirmesi,
-- delete işleminde seçilen sayfaların kaldırılması,
-- bütün sayfaların silinmesinin engellenmesi,
-- yalnızca seçilen sayfaların 90° katlarıyla döndürülmesi,
-- seçilen sayfaların doğru konumlarda çoğaltılması,
-- başka bir PDF'den seçilen sayfaların istenen sırayla eklenmesi,
-- belgenin başına veya belirtilen konuma boş sayfa eklenmesi,
-- Undo / Redo durum geçişleri ve yeni işlemde redo zincirinin temizlenmesi,
-- generated dosyalarda aynı isim çakışmasının güvenli çözülmesi,
-- generated dosya adlarında path traversal girişlerinin reddedilmesi,
-- generated DB kayıt hatasında fiziksel çıktının temizlenmesi,
-- gerçek Merge / Split / Page Edit akışları,
-- genel regresyon kontrolleri.
+- veri katmanı, migration ve transaction davranışları,
+- dosya doğrulama, güvenli import ve duplicate detection,
+- kütüphane ve çöp kutusu işlemleri,
+- Merge, Split ve sayfa düzenleme akışları,
+- görsel sırasını ve şeffaflığı koruyan JPG / PNG → PDF dönüşümü,
+- tüm sayfaları veya seçilen sayfaları PDF → JPG dönüştürme,
+- DPI, kalite, geçersiz girdi ve şifreli PDF kontrolleri,
+- hata durumunda fiziksel çıktıların temizlenmesi,
+- kaynak dosyaların değişmeden kalması ve genel regresyon kontrolleri.
 
 ### 🧑‍🔬 Manuel gerçek dosya testleri
 
@@ -707,6 +639,12 @@ Sayfa düzenleme:
 ```bash
 python scripts/manual_page_edit_test.py
 python scripts/manual_page_edit_test2.py
+```
+
+Görsel dönüşümleri:
+
+```bash
+python scripts/manual_image_conversion_test.py
 ```
 
 ---
@@ -798,7 +736,7 @@ Documents/PDF-REME/trash/
 
 altında tutulur ve uygulama dışından Dosya Gezgini ile de erişilebilir.
 
-Merge, Split ve Page Edit sonucunda oluşturulan yeni PDF'ler:
+Merge, Split, Page Edit ve görsel dönüşüm sonucunda oluşturulan dosyalar:
 
 ```text
 Documents/PDF-REME/library/generated/
@@ -810,170 +748,13 @@ altında tutulur.
 
 ## 🗺️ Yol Haritası
 
-### ⚙️ Backend / Core
+Güncel odak, tamamlanan çekirdek altyapıyı masaüstü deneyimine taşımak ve ilk kararlı sürüme hazırlamaktır.
 
-- [x] Proje ve katmanlı mimari temeli
-- [x] SQLite + SQLAlchemy
-- [x] Repository altyapısı
-- [x] Alembic migration
-- [x] Transaction yönetimi
-- [x] Dosya doğrulama
-- [x] SHA-256 / duplicate detection
-- [x] Güvenli import
-- [x] Kütüphane servisleri
-- [x] Favoriler / Son kullanılanlar
-- [x] Çöp kutusu / Restore
-- [x] Kalıcı silme / Çöp kutusunu temizleme
-- [x] 30 günlük çöp kutusu retention kontrolü
-- [x] PDF Merge
-- [x] PDF Split
-- [x] Seçili sayfaları dışa aktarma
-- [x] Sayfa yeniden sıralama
-- [x] İki sayfanın yerini değiştirme
-- [x] Sayfa silme
-- [x] Sayfa döndürme
-- [x] Sayfa çoğaltma
-- [x] Başka PDF'den sayfa ekleme
-- [x] Boş sayfa ekleme
-- [x] Undo / Redo
-- [ ] JPG / JPEG / PNG → PDF
-- [ ] PDF → JPG
-- [ ] DOC / DOCX → PDF
-- [ ] PPT / PPTX → PDF
-- [ ] Excel → PDF **(opsiyonel / değerlendirme aşamasında)**
-- [ ] PDF küçültme / sıkıştırma
-- [ ] PDF kilitleme / şifreleme
-- [ ] PDF kilidini açma
-
-### 🖥️ Frontend
-
-> Gün 16–20 arası geliştirme süreci frontend çalışmalarına ayrılmıştır.
-
-- [x] Görsel tasarım dili / konsept çalışmaları
-- [ ] Stitch ile final ekran tasarımları
-- [ ] PySide6 uygulama shell'i
-- [ ] Ana Sayfa
-- [ ] Kütüphane
-- [ ] Çöp Kutusu
-- [ ] PDF Viewer
-- [ ] Merge ekranı
-- [ ] Split ekranı
-- [ ] PDF Düzenleyici
-- [ ] Görsel ↔ PDF dönüştürme ekranları
-- [ ] Office → PDF dönüştürme ekranları
-- [ ] PDF sıkıştırma ekranı
-- [ ] PDF güvenlik / parola ekranı
-- [ ] Tema altyapısı
-- [ ] Backend entegrasyonu
-
-### 📦 Release
-
-- [ ] Windows Setup
-- [ ] Windows Portable
-- [ ] Linux paketi
-- [ ] Final README / ekran görüntüleri
-- [ ] GitHub Release
-
----
-
-## ⏭️ Sıradaki Geliştirme Aşamaları
-
-Gün 11 sonunda temel PDF düzenleme backend'i tamamlanmış ve tüm testler başarıyla geçmiştir.
-
-Kalan V1 backend özellikleri için güncel geliştirme sırası:
-
-```text
-Gün 12
-PDF → JPG
-JPG / JPEG / PNG → PDF
-        ↓
-Gün 13
-DOC / DOCX → PDF
-PPT / PPTX → PDF
-Excel → PDF (opsiyonel değerlendirme)
-        ↓
-Gün 14
-PDF Küçültme / Sıkıştırma
-        ↓
-Gün 15
-PDF Kilitleme / Şifreleme
-PDF Kilidini Açma
-        ↓
-Gün 16–20
-Stitch + PySide6 Frontend
-Backend entegrasyonu
-Paketleme / Release
-```
-
-Backend tarafına yeni V1 özellikleri Gün 15 sonrasına taşınmayacaktır. Gün 16–20 arası odak tamamen masaüstü kullanıcı arayüzü ve entegrasyon olacaktır.
-
----
-
-## 🚀 Sürüm Planları ve Yaklaşan Özellikler
-
-PDF-REME sürümleri, V1'i gereksiz şekilde ağırlaştırmadan ürünün yeteneklerini aşamalı olarak genişletecek şekilde planlanmaktadır.
-
-### 🟢 V1 — Yerel PDF Araç Seti
-
-V1'in hedefi; günlük PDF ve belge işlemlerini tamamen yerel ortamda gerçekleştirebilen, hızlı ve güvenli bir masaüstü araç seti oluşturmaktır.
-
-V1 kapsamında tamamlanan veya planlanan ana yetenekler:
-
-- PDF Merge / Split
-- Sayfa tabanlı PDF düzenleme
-- Undo / Redo
-- PDF ↔ JPG / PNG iş akışları
-- Word → PDF
-- PowerPoint → PDF
-- PDF küçültme / sıkıştırma
-- PDF parola ile kilitleme ve kilit açma
-- Yerel kütüphane, favoriler, son kullanılanlar ve çöp kutusu
-- Windows ve Linux masaüstü arayüzü
-
-> Excel → PDF V1 için opsiyonel olarak değerlendirilmektedir ve henüz kesin kapsam değildir.
-
-### 🔵 V2 — Gelişmiş Dönüşüm ve Belge Özellikleri
-
-V2 için planlanan daha ağır özellikler:
-
-- PDF → Word
-- PDF → PowerPoint
-- PDF → Excel
-- PDF Türkçe → İngilizce çeviri
-- PDF İngilizce → Türkçe çeviri
-- Sertifika / private key tabanlı gerçek elektronik imza desteği
-
-Bu özellikler; belge düzenini koruma, karmaşık içerik dönüştürme veya kriptografik imzalama gibi daha gelişmiş teknik gereksinimler taşıdığı için V1 kapsamının dışında tutulmaktadır.
-
-### 🟣 V3 — Yerel Yapay Zekâ Özellikleri
-
-V3 ile PDF-REME'ye isteğe bağlı yerel yapay zekâ yetenekleri eklenmesi hedeflenmektedir.
-
-Planlanan ana başlık:
-
-- Yerel AI destekli PDF özetleyici
-
-İlerleyen aşamada bu altyapı, tamamen yerel çalışma yaklaşımını koruyacak şekilde başka belge analiz özellikleriyle genişletilebilir.
-
----
-
-## 🚫 V1 Kapsamı Dışında
-
-İlk sürümde yer alması planlanmayan başlıca özellikler:
-
-- PDF içindeki mevcut metin ve nesneleri Word benzeri düzenleme
-- OCR
-- PDF → Word / PowerPoint / Excel **(V2)**
-- Türkçe ↔ İngilizce PDF çevirisi **(V2)**
-- Sertifikalı elektronik imza **(V2)**
-- AI özetleyici ve yerel AI özellikleri **(V3)**
-- Gelişmiş anotasyon
-- Form düzenleme
-- Bulut senkronizasyonu
-- Kullanıcı hesabı
-- Mobil uygulama
-- macOS paketleme
-- Otomatik güncelleme
+- [x] Yerel veri, kütüphane ve güvenli dosya yönetimi
+- [x] Temel PDF araçları ve sayfa düzenleme backend'i
+- [x] PDF ↔ görsel dönüşüm altyapısı
+- [ ] Masaüstü arayüzü ve backend entegrasyonu
+- [ ] Dağıtım paketleri ve ilk kararlı sürüm
 
 ---
 
