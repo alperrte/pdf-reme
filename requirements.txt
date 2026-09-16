@@ -8,3 +8,4 @@ pytest-qt
 ruff
 alembic
 pikepdf
+cryptography

@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/UI-PySide6-41CD52?logo=qt&logoColor=white" alt="PySide6" />
   <img src="https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Tests-253%20Passing-success" alt="253 test başarılı" />
+  <img src="https://img.shields.io/badge/Tests-269%20Passing-success" alt="269 test başarılı" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-5A5A5A" alt="Windows ve Linux" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue" alt="Apache 2.0 lisansı" /></a>
   <img src="https://img.shields.io/badge/Status-Active%20Development-orange" alt="Aktif geliştirme" />
@@ -42,7 +42,7 @@ Temel hedef; PDF ve benzeri belgeleri işlemek için web tabanlı araçlara, bul
 
 | 🔒 Gizlilik | 🧰 Güçlü PDF araçları | 🗃️ Yerel kütüphane | 🧪 Güvenilir altyapı |
 |---|---|---|---|
-| Dosyalar üçüncü taraf servislere yüklenmez. | PDF araçları, sıkıştırma ve belge dönüşümleri bir arada. | Belgeler, favoriler ve çöp kutusu cihazınızda yönetilir. | Katmanlı mimari ve **253 başarılı test**. |
+| Dosyalar üçüncü taraf servislere yüklenmez. | PDF araçları, güvenlik ve belge dönüşümleri bir arada. | Belgeler, favoriler ve çöp kutusu cihazınızda yönetilir. | Katmanlı mimari ve **269 başarılı test**. |
 
 ---
 
@@ -77,7 +77,7 @@ Mevcut backend altyapısında:
 - favori belgeler takip edilebilir,
 - son kullanılan belgeler `last_opened_at` üzerinden sıralanabilir,
 - belgeler çöp kutusuna taşınabilir ve geri yüklenebilir,
-- PDF araçları, sıkıştırma, görsel ve Office dönüşümlerinden üretilen dosyalar `generated` kütüphanesine kaydedilebilir,
+- PDF araçları, güvenlik, sıkıştırma, görsel ve Office dönüşümlerinden üretilen dosyalar `generated` kütüphanesine kaydedilebilir,
 - oluşturulan belgeler için SHA-256, dosya boyutu, sayfa sayısı ve üretim türü metadata olarak tutulabilir,
 - fiziksel dosyalar dosya sisteminde, metadata bilgileri SQLite üzerinde tutulur.
 
@@ -471,6 +471,33 @@ python scripts/manual_pdf_compression_test.py "C:\Test\test.pdf"
 
 ---
 
+## 🔏 PDF Şifreleme ve Kilit Açma
+
+Gün 15 ile PDF parola koruması ve kilit açma backend'i tamamlandı.
+
+### PDF şifreleme
+
+- PDF'i `AES-256-R5` algoritmasıyla parola korumalı yeni bir dosyaya dönüştürme
+- Kullanıcı parolasından ayrı, isteğe bağlı owner parolası desteği
+- Zaten şifreli PDF'lerin yeniden şifrelenmesini engelleme
+- Çıktıyı `generation_type = "pdf_encrypt"` ile kütüphaneye kaydetme
+
+### PDF kilidini açma
+
+- Doğru parolayla şifreli PDF'den yeni bir kilitsiz kopya oluşturma
+- Yanlış parola ve şifreli olmayan kaynakları kontrollü biçimde reddetme
+- Çıktıyı `generation_type = "pdf_decrypt"` ile kütüphaneye kaydetme
+
+Her iki akışta da kaynak PDF korunur, sayfa sayısı doğrulanır, mevcut çıktının üzerine yazılmaz ve hata durumunda yarım dosyalar temizlenir.
+
+Gerçek dosya testi:
+
+```bash
+python scripts/manual_pdf_security_test.py "C:\Test\test.pdf"
+```
+
+---
+
 ## 🚧 Aktif Geliştirme
 
 <div align="center">
@@ -481,12 +508,12 @@ PDF-REME şu anda aktif olarak geliştirilmektedir.
 
 Backend-first yaklaşımla çekirdek iş akışları ve güvenli veri yönetimi geliştirilmektedir.
 
-**Gün 14 tamamlandı:** Hafif, dengeli ve güçlü PDF sıkıştırma profilleri backend'e eklendi.
+**Gün 15 tamamlandı:** AES-256 PDF şifreleme ve doğru parolayla kilit açma akışları backend'e eklendi.
 
 ### ✅ Güncel checkpoint
 
 ```text
-253 passed
+269 passed
 0 failed
 ```
 
@@ -501,6 +528,7 @@ Backend-first yaklaşımla çekirdek iş akışları ve güvenli veri yönetimi 
 - [x] PDF → JPG
 - [x] Word / PowerPoint / Excel → PDF
 - [x] PDF sıkıştırma ve boyut kazanımı raporlama
+- [x] PDF şifreleme ve kilit açma
 - [x] Otomatik ve gerçek dosya testleri
 
 ---
@@ -521,6 +549,8 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 - Çıktı dosyalarının kaynak PDF'nin üzerine yazılması engellenir.
 - Generated dosya adlarında klasör yolu / path traversal girişleri reddedilir.
 - Aynı isimli generated çıktıların üzerine yazılmaz; benzersiz isim üretilir.
+- PDF parolaları metadata veya log kayıtlarına yazılmaz.
+- Şifreleme sonrasında parola ve sayfa sayısı, kilit açma sonrasında ise şifre durumunun kaldırıldığı doğrulanır.
 - Çöp kutusuna taşınan belgenin önceki uygulama yolu ayrıca saklanır.
 - Kalıcı silme yalnızca PDF-REME'nin kendi `trash/` alanıyla sınırlandırılır.
 - Restore işleminde aynı isimli dosyanın üzerine yazılmaz.
@@ -555,6 +585,8 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 - PPT / PPTX → PDF
 - XLS / XLSX → PDF
 - Hafif / dengeli / güçlü PDF sıkıştırma
+- AES-256 PDF şifreleme
+- Parolayla PDF kilidini açma
 
 ---
 
@@ -566,6 +598,7 @@ PDF-REME geliştirilirken belge güvenliği temel ürün ilkelerinden biridir.
 | Masaüstü UI | PySide6 + Qt Widgets |
 | Stil | QSS |
 | PDF işlemleri | pypdf |
+| PDF güvenliği | pypdf + cryptography |
 | PDF sıkıştırma | pikepdf + Pillow + QtPdf |
 | PDF görüntüleme | PySide6 QtPdf |
 | Görsel işlemleri | Pillow |
@@ -669,6 +702,18 @@ PdfCompressionService + PdfCompressionEngine
 pikepdf + Pillow + QtPdf + generated/ + SQLite
 ```
 
+PDF güvenlik örneği:
+
+```text
+Presentation
+    ↓
+EncryptPdfUseCase / DecryptPdfUseCase
+    ↓
+PdfSecurityService + DocumentRepository
+    ↓
+pypdf + cryptography + generated/ + SQLite
+```
+
 ---
 
 ## 🧪 Testler
@@ -682,7 +727,7 @@ python -m pytest -v
 Güncel geliştirme checkpoint'i:
 
 ```text
-253 passed
+269 passed
 0 failed
 ```
 
@@ -700,6 +745,9 @@ Test paketi başlıca şu alanları kapsar:
 - üç PDF sıkıştırma profilinin geçerli çıktı üretmesi,
 - sayfa sayısının korunması ve çıktının kaynaktan büyük olmaması,
 - şifreli PDF, geçersiz profil ve path traversal kontrolleri,
+- AES-256 şifreli çıktı üretimi ve doğru parolayla kilit açma,
+- yanlış/boş parola ile geçersiz kaynak ve çıktı kontrolleri,
+- güvenlik işlemlerinde sayfa sayısının ve kaynak dosyanın korunması,
 - hata durumunda fiziksel çıktıların temizlenmesi,
 - kaynak dosyaların değişmeden kalması ve genel regresyon kontrolleri.
 
@@ -746,6 +794,12 @@ PDF sıkıştırma:
 
 ```bash
 python scripts/manual_pdf_compression_test.py "C:\Test\test.pdf"
+```
+
+PDF güvenliği:
+
+```bash
+python scripts/manual_pdf_security_test.py "C:\Test\test.pdf"
 ```
 
 ---
@@ -837,7 +891,7 @@ Documents/PDF-REME/trash/
 
 altında tutulur ve uygulama dışından Dosya Gezgini ile de erişilebilir.
 
-Merge, Split, Page Edit, sıkıştırma, görsel ve Office dönüşümleri sonucunda oluşturulan dosyalar:
+Merge, Split, Page Edit, güvenlik, sıkıştırma, görsel ve Office işlemleri sonucunda oluşturulan dosyalar:
 
 ```text
 Documents/PDF-REME/library/generated/
@@ -855,6 +909,7 @@ Güncel odak, tamamlanan çekirdek altyapıyı masaüstü deneyimine taşımak v
 - [x] Temel PDF araçları ve sayfa düzenleme backend'i
 - [x] PDF ↔ görsel ve Office → PDF dönüşüm altyapısı
 - [x] PDF sıkıştırma altyapısı
+- [x] PDF şifreleme ve kilit açma altyapısı
 - [ ] Masaüstü arayüzü ve backend entegrasyonu
 - [ ] Dağıtım paketleri ve ilk kararlı sürüm
 
