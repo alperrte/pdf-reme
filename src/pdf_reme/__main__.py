@@ -1,30 +1,110 @@
 import sys
+from pathlib import Path
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+)
 
-from pdf_reme.presentation.windows.main_window import MainWindow
-from pdf_reme.shared.paths.app_paths import AppPaths
+
+def get_app_icon() -> QIcon:
+    icon_path = (
+        Path(__file__).resolve().parent
+        / "resources"
+        / "images"
+        / "icon.png"
+    )
+
+    original = QPixmap(
+        str(icon_path)
+    )
+
+    if original.isNull():
+        return QIcon()
+
+    crop_ratio = 0.12
+
+    crop_x = int(
+        original.width()
+        * crop_ratio
+    )
+
+    crop_y = int(
+        original.height()
+        * crop_ratio
+    )
+
+    cropped_width = (
+        original.width()
+        - (crop_x * 2)
+    )
+
+    cropped_height = (
+        original.height()
+        - (crop_y * 2)
+    )
+
+    cropped = original.copy(
+        crop_x,
+        crop_y,
+        cropped_width,
+        cropped_height,
+    )
+
+    zoomed = cropped.scaled(
+        256,
+        256,
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation,
+    )
+
+    return QIcon(
+        zoomed
+    )
 
 
 def main() -> int:
-    paths = AppPaths()
+    app = QApplication(
+        sys.argv
+    )
 
-    print(f"PDF-REME veri yolu: {paths.data_dir}")
+    app.setApplicationName(
+        "PDF-REME"
+    )
 
-    paths.ensure_directories()
+    app.setOrganizationName(
+        "PDF-REME"
+    )
 
-    print(f"Veri klasörü oluşturuldu mu: {paths.data_dir.exists()}")
+    app_icon = get_app_icon()
 
-    app = QApplication(sys.argv)
+    app.setWindowIcon(
+        app_icon
+    )
 
-    app.setApplicationName("PDF-REME")
-    app.setOrganizationName("PDF-REME")
+    window = QMainWindow()
 
-    window = MainWindow()
+    window.setWindowTitle(
+        "PDF-REME"
+    )
+
+    window.setWindowIcon(
+        app_icon
+    )
+
+    window.resize(
+        1280,
+        800,
+    )
+
     window.show()
 
     return app.exec()
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(
+        main()
+    )
