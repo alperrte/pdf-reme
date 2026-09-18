@@ -9,3 +9,4 @@ ruff
 alembic
 pikepdf
 cryptography
+qtawesome

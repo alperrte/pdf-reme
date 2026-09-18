@@ -1,0 +1,729 @@
+/* =========================================================
+   PDF-REME
+   GLOBAL THEME
+
+   Bu dosya hem açık hem koyu temayı tek kaynaktan yönetir.
+   Koyu tema kuralları, #appRoot üzerindeki dinamik "theme"
+   property'sine göre [theme="dark"] öznitelik seçicileriyle
+   override edilir (main_window.py bu property'yi set edip
+   app.setStyleSheet(app.styleSheet()) ile repolish tetikler).
+
+   Renk tokenları presentation/theme.py THEMES sözlüğüyle elle
+   senkron tutulur (QSS Python sabitlerini okuyamaz).
+
+   "Plus Jakarta Sans" ailesi Regular/Bold için klasik stil
+   linkiyle gelir (font-weight: 700 yeterli); Medium/SemiBold
+   ise OpenType'ın 4 stilli aile sınırı yüzünden ayrı aile
+   adlarıyla kayıtlıdır, bu yüzden ilgili kurallarda doğrudan
+   "Plus Jakarta Sans Medium" / "Plus Jakarta Sans SemiBold"
+   aile adı kullanılır.
+   ========================================================= */
+
+QWidget {
+    font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: #172033;
+}
+
+QMainWindow {
+    background-color: #F6F8FC;
+}
+
+#appRoot {
+    background-color: #F6F8FC;
+}
+
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+#sidebar {
+    background-color: #FFFFFF;
+
+    border: none;
+    border-right: 1px solid #E5EAF1;
+}
+
+
+/* =========================================================
+   BRAND
+   ========================================================= */
+
+#sidebarBrand {
+    background-color: transparent;
+}
+
+#sidebarLogo {
+    background-color: transparent;
+}
+
+#sidebarBrandTitle {
+    background-color: transparent;
+
+    color: #102447;
+
+    font-family: "Plus Jakarta Sans";
+    font-size: 17px;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   SIDEBAR SCROLL AREA
+   ========================================================= */
+
+#sidebarScrollArea {
+    background-color: transparent;
+
+    border: none;
+}
+
+#sidebarScrollArea > QWidget {
+    background-color: transparent;
+}
+
+#sidebarScrollArea QWidget#qt_scrollarea_viewport {
+    background-color: transparent;
+}
+
+#sidebarNavigation {
+    background-color: transparent;
+}
+
+
+/* =========================================================
+   SIDEBAR SECTION TITLES
+   ========================================================= */
+
+#sidebarSectionTitle {
+    color: #9AA6B7;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 9px;
+
+    padding-left: 11px;
+    padding-top: 7px;
+    padding-bottom: 4px;
+}
+
+
+/* =========================================================
+   SIDEBAR NAVIGATION BUTTON
+   ========================================================= */
+
+QPushButton[navButton="true"] {
+    min-height: 40px;
+
+    background-color: transparent;
+
+    border: none;
+    border-left: 3px solid transparent;
+
+    border-radius: 9px;
+
+    padding-left: 13px;
+    padding-right: 10px;
+
+    color: #53637A;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+
+    text-align: left;
+}
+
+QPushButton[navButton="true"]:hover {
+    background-color: #F3F7FC;
+
+    color: #1D5FD1;
+}
+
+QPushButton[navButton="true"]:checked {
+    background-color: #EBF3FF;
+
+    border-left: 3px solid #2563EB;
+
+    color: #1859C9;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+}
+
+QPushButton[navButton="true"]:pressed {
+    background-color: #DFEBFC;
+}
+
+
+/* =========================================================
+   SIDEBAR FOOTER
+   ========================================================= */
+
+#sidebarFooter {
+    color: #A3ADBC;
+
+    font-size: 9px;
+
+    padding-left: 5px;
+}
+
+
+/* =========================================================
+   SIDEBAR PINNED FOOTER (SETTINGS / LANGUAGE / THEME)
+   ========================================================= */
+
+#sidebarDivider {
+    background-color: #E5EAF1;
+
+    border: none;
+    max-height: 1px;
+}
+
+#sidebarFlagButton {
+    background-color: transparent;
+
+    border: 1px solid transparent;
+    border-radius: 8px;
+}
+
+#sidebarFlagButton:hover {
+    background-color: #F3F7FC;
+
+    border: 1px solid #E5EAF1;
+}
+
+#sidebarFlagButton:checked {
+    background-color: #EBF3FF;
+
+    border: 1px solid #BFD7FE;
+}
+
+#sidebarThemeButton {
+    background-color: transparent;
+
+    border: 1px solid transparent;
+    border-radius: 17px;
+}
+
+#sidebarThemeButton:hover {
+    background-color: #F3F7FC;
+
+    border: 1px solid #E5EAF1;
+}
+
+
+/* =========================================================
+   MAIN CONTENT
+   ========================================================= */
+
+#contentArea {
+    background-color: #F7F9FC;
+
+    border: none;
+}
+
+#pageStack {
+    background-color: #F7F9FC;
+
+    border: none;
+}
+
+#placeholderPage {
+    background-color: #F7F9FC;
+}
+
+
+/* =========================================================
+   PAGE TYPOGRAPHY
+   ========================================================= */
+
+#pageTitle {
+    color: #102447;
+
+    font-family: "Plus Jakarta Sans";
+    font-size: 28px;
+    font-weight: 700;
+}
+
+#pageDescription {
+    color: #64748B;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+
+#dashboardScrollArea {
+    background-color: transparent;
+
+    border: none;
+}
+
+#dashboardScrollArea QWidget#qt_scrollarea_viewport {
+    background-color: transparent;
+}
+
+#dashboardContent {
+    background-color: transparent;
+}
+
+#dashboardTitle {
+    color: #102447;
+
+    font-family: "Plus Jakarta Sans";
+    font-size: 26px;
+    font-weight: 700;
+}
+
+#dashboardSubtitle {
+    color: #64748B;
+
+    font-size: 13px;
+}
+
+#dashboardSectionTitle {
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 15px;
+}
+
+
+/* ---------------------------------------------------------
+   QUICK ACTION CARDS
+   --------------------------------------------------------- */
+
+#dashboardActionCard {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 16px;
+}
+
+#dashboardActionCard:hover {
+    border: 1px solid #D7E2F0;
+}
+
+#dashboardActionIconContainer {
+    border-radius: 12px;
+}
+
+#dashboardActionIconContainer[accentColor="red"] {
+    background-color: #FDECEB;
+}
+
+#dashboardActionIconContainer[accentColor="blue"] {
+    background-color: #E9F0FE;
+}
+
+#dashboardActionIconContainer[accentColor="purple"] {
+    background-color: #F2EAFC;
+}
+
+#dashboardActionIconContainer[accentColor="green"] {
+    background-color: #E4F9F0;
+}
+
+#dashboardActionIconContainer[accentColor="teal"] {
+    background-color: #E1F5F2;
+}
+
+#dashboardActionTitle {
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 15px;
+}
+
+#dashboardActionDescription {
+    color: #7A8699;
+
+    font-size: 12px;
+}
+
+/* ---------------------------------------------------------
+   LOWER PANELS
+   --------------------------------------------------------- */
+
+#dashboardPanel {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 16px;
+}
+
+#dashboardPanelTitle {
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 14px;
+}
+
+#dashboardTextButton {
+    background-color: transparent;
+
+    border: none;
+
+    color: #2563EB;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 11px;
+}
+
+#dashboardTextButton:hover {
+    color: #1746A2;
+
+    text-decoration: underline;
+}
+
+#dashboardToolButton {
+    background-color: transparent;
+
+    border: none;
+    border-radius: 9px;
+
+    padding: 9px 10px;
+
+    color: #3E4C61;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+
+    text-align: left;
+}
+
+#dashboardToolButton:hover {
+    background-color: #F3F7FC;
+
+    color: #1D5FD1;
+}
+
+#dashboardEmptyText {
+    color: #9AA6B7;
+
+    font-size: 12px;
+}
+
+#recentDocumentRow {
+    background-color: #FAFBFD;
+
+    border: 1px solid #EEF1F6;
+    border-radius: 12px;
+}
+
+#recentDocumentRow:hover {
+    background-color: #F3F7FC;
+
+    border: 1px solid #E5EAF1;
+}
+
+#recentDocumentName {
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 12px;
+}
+
+#recentDocumentMeta {
+    color: #9AA6B7;
+
+    font-size: 10px;
+}
+
+#recentDocumentOpenButton {
+    background-color: transparent;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 8px;
+
+    padding: 4px 12px;
+
+    color: #2563EB;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 11px;
+}
+
+#recentDocumentOpenButton:hover {
+    background-color: #EBF3FF;
+
+    border: 1px solid #BFD7FE;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+QScrollBar:vertical {
+    width: 6px;
+
+    background-color: transparent;
+
+    margin: 2px 0 2px 0;
+}
+
+QScrollBar::handle:vertical {
+    min-height: 28px;
+
+    background-color: #D6DDE8;
+
+    border-radius: 3px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #BFC9D8;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+    background: none;
+}
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+
+/* =========================================================
+   TOOLTIP
+   ========================================================= */
+
+QToolTip {
+    background-color: #172033;
+
+    color: #FFFFFF;
+
+    border: none;
+
+    padding: 6px 8px;
+}
+
+
+/* =========================================================
+   =========================================================
+   DARK THEME OVERRIDES
+   =========================================================
+   ========================================================= */
+
+#appRoot[theme="dark"] {
+    background-color: #0F1420;
+}
+
+#appRoot[theme="dark"] QWidget {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #sidebar {
+    background-color: #12141F;
+
+    border-right: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #sidebarBrandTitle {
+    color: #F1F4FA;
+}
+
+#appRoot[theme="dark"] #sidebarSectionTitle {
+    color: #5B6579;
+}
+
+#appRoot[theme="dark"] QPushButton[navButton="true"] {
+    color: #8A94A8;
+}
+
+#appRoot[theme="dark"] QPushButton[navButton="true"]:hover {
+    background-color: #1A2030;
+
+    color: #7FADFB;
+}
+
+#appRoot[theme="dark"] QPushButton[navButton="true"]:checked {
+    background-color: #1C2A42;
+
+    border-left: 3px solid #3B82F6;
+
+    color: #9CC0FC;
+}
+
+#appRoot[theme="dark"] QPushButton[navButton="true"]:pressed {
+    background-color: #202B42;
+}
+
+#appRoot[theme="dark"] #sidebarFooter {
+    color: #4C566B;
+}
+
+#appRoot[theme="dark"] #sidebarDivider {
+    background-color: #232B3D;
+}
+
+#appRoot[theme="dark"] #sidebarFlagButton:hover {
+    background-color: #1A2030;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #sidebarFlagButton:checked {
+    background-color: #1C2A42;
+
+    border: 1px solid #2E4468;
+}
+
+#appRoot[theme="dark"] #sidebarThemeButton:hover {
+    background-color: #1A2030;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #contentArea {
+    background-color: #10141F;
+}
+
+#appRoot[theme="dark"] #pageStack {
+    background-color: #10141F;
+}
+
+#appRoot[theme="dark"] #placeholderPage {
+    background-color: #10141F;
+}
+
+#appRoot[theme="dark"] #pageTitle {
+    color: #F1F4FA;
+}
+
+#appRoot[theme="dark"] #pageDescription {
+    color: #8A94A8;
+}
+
+#appRoot[theme="dark"] #dashboardTitle {
+    color: #F1F4FA;
+}
+
+#appRoot[theme="dark"] #dashboardSubtitle {
+    color: #8A94A8;
+}
+
+#appRoot[theme="dark"] #dashboardSectionTitle {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #dashboardActionCard {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #dashboardActionCard:hover {
+    border: 1px solid #2C374E;
+}
+
+#appRoot[theme="dark"] #dashboardActionIconContainer[accentColor="red"] {
+    background-color: #3B2226;
+}
+
+#appRoot[theme="dark"] #dashboardActionIconContainer[accentColor="blue"] {
+    background-color: #1D2A40;
+}
+
+#appRoot[theme="dark"] #dashboardActionIconContainer[accentColor="purple"] {
+    background-color: #2B2142;
+}
+
+#appRoot[theme="dark"] #dashboardActionIconContainer[accentColor="green"] {
+    background-color: #163A2A;
+}
+
+#appRoot[theme="dark"] #dashboardActionIconContainer[accentColor="teal"] {
+    background-color: #123B38;
+}
+
+#appRoot[theme="dark"] #dashboardActionTitle {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #dashboardActionDescription {
+    color: #7C879C;
+}
+
+#appRoot[theme="dark"] #dashboardPanel {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #dashboardPanelTitle {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #dashboardTextButton {
+    color: #3B82F6;
+}
+
+#appRoot[theme="dark"] #dashboardTextButton:hover {
+    color: #7FADFB;
+}
+
+#appRoot[theme="dark"] #dashboardToolButton {
+    color: #AEB8CB;
+}
+
+#appRoot[theme="dark"] #dashboardToolButton:hover {
+    background-color: #1A2030;
+
+    color: #7FADFB;
+}
+
+#appRoot[theme="dark"] #dashboardEmptyText {
+    color: #5B6579;
+}
+
+#appRoot[theme="dark"] #recentDocumentRow {
+    background-color: #171B29;
+
+    border: 1px solid #202737;
+}
+
+#appRoot[theme="dark"] #recentDocumentRow:hover {
+    background-color: #1A2030;
+
+    border: 1px solid #2C374E;
+}
+
+#appRoot[theme="dark"] #recentDocumentName {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #recentDocumentMeta {
+    color: #5B6579;
+}
+
+#appRoot[theme="dark"] #recentDocumentOpenButton {
+    border: 1px solid #232B3D;
+
+    color: #3B82F6;
+}
+
+#appRoot[theme="dark"] #recentDocumentOpenButton:hover {
+    background-color: #1C2A42;
+
+    border: 1px solid #2E4468;
+}
+
+#appRoot[theme="dark"] QScrollBar::handle:vertical {
+    background-color: #2B3448;
+}
+
+#appRoot[theme="dark"] QScrollBar::handle:vertical:hover {
+    background-color: #384258;
+}
+
+#appRoot[theme="dark"] QToolTip {
+    background-color: #F1F4FA;
+
+    color: #12141F;
+}

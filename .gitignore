@@ -57,6 +57,9 @@ thumbnails/
 *.swo
 *~
 
+# Claude Code local config/skills
+.claude/
+
 # Operating-system metadata
 .DS_Store
 Thumbs.db

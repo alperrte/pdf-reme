@@ -2,16 +2,20 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-)
+from PySide6.QtGui import QFontDatabase, QIcon, QPixmap
+from PySide6.QtWidgets import QApplication
+
+from pdf_reme.presentation.theme import get_theme_manager
+from pdf_reme.presentation.windows.main_window import MainWindow
+from pdf_reme.presentation.windows.splash_screen import SplashScreen
+
+
+BASE_DIR = Path(__file__).resolve().parent
 
 
 def get_app_icon() -> QIcon:
     icon_path = (
-        Path(__file__).resolve().parent
+        BASE_DIR
         / "resources"
         / "images"
         / "icon.png"
@@ -22,8 +26,14 @@ def get_app_icon() -> QIcon:
     )
 
     if original.isNull():
+        print(
+            f"UYARI: Uygulama ikonu bulunamadı: {icon_path}"
+        )
+
         return QIcon()
 
+    # Taskbar üzerinde ikonun biraz daha büyük
+    # görünmesi için tasarımı bozmadan kırpıyoruz.
     crop_ratio = 0.12
 
     crop_x = int(
@@ -65,9 +75,74 @@ def get_app_icon() -> QIcon:
     )
 
 
+def load_stylesheet(
+    app: QApplication,
+) -> None:
+    qss_path = (
+        BASE_DIR
+        / "resources"
+        / "styles"
+        / "app.qss"
+    )
+
+    if not qss_path.exists():
+        print(
+            f"UYARI: QSS bulunamadı: {qss_path}"
+        )
+
+        return
+
+    stylesheet = qss_path.read_text(
+        encoding="utf-8"
+    )
+
+    app.setStyleSheet(
+        stylesheet
+    )
+
+    print(
+        f"QSS yüklendi: {qss_path}"
+    )
+
+
+def load_fonts() -> None:
+    fonts_dir = (
+        BASE_DIR
+        / "resources"
+        / "fonts"
+    )
+
+    # Regular/Bold "Plus Jakarta Sans" ailesi altında klasik
+    # stil eşleşmesiyle gelir; Medium/SemiBold ise OpenType'ın
+    # 4 stilli aile modeli yüzünden kendi ayrı aile adlarıyla
+    # kayıtlı olur (bkz. app.qss'teki font-family kullanımları).
+    font_files = [
+        "PlusJakartaSans-Regular.ttf",
+        "PlusJakartaSans-Medium.ttf",
+        "PlusJakartaSans-SemiBold.ttf",
+        "PlusJakartaSans-Bold.ttf",
+    ]
+
+    for font_file in font_files:
+        font_path = fonts_dir / font_file
+
+        if font_path.exists():
+            QFontDatabase.addApplicationFont(
+                str(font_path)
+            )
+        else:
+            print(
+                f"UYARI: Font bulunamadı: {font_path}"
+            )
+
+
 def main() -> int:
     app = QApplication(
         sys.argv
+    )
+
+    app.setStyle(
+        "Fusion"
     )
 
     app.setApplicationName(
@@ -78,28 +153,46 @@ def main() -> int:
         "PDF-REME"
     )
 
+    app.setApplicationDisplayName(
+        "PDF-REME"
+    )
+
+    load_fonts()
+
+    theme_manager = get_theme_manager()
+
+    theme_manager.apply_palette(
+        app
+    )
+
     app_icon = get_app_icon()
 
     app.setWindowIcon(
         app_icon
     )
 
-    window = QMainWindow()
-
-    window.setWindowTitle(
-        "PDF-REME"
+    load_stylesheet(
+        app
     )
+
+    window = MainWindow()
 
     window.setWindowIcon(
         app_icon
     )
 
-    window.resize(
-        1280,
-        800,
+    splash = SplashScreen()
+
+    def _show_main_window() -> None:
+        window.show()
+
+        splash.close()
+
+    splash.finished.connect(
+        _show_main_window
     )
 
-    window.show()
+    splash.show()
 
     return app.exec()
 
