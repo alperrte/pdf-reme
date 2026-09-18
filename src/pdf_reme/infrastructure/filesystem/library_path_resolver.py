@@ -11,6 +11,7 @@ def resolve_import_directory(
         "pdf": paths.imported_pdf_dir,
         "word": paths.imported_word_dir,
         "powerpoint": paths.imported_powerpoint_dir,
+        "excel": paths.imported_excel_dir,
         "image": paths.imported_images_dir,
     }
 

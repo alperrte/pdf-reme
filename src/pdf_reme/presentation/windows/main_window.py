@@ -1,8 +1,10 @@
 from PySide6.QtCore import (
     QEasingCurve,
     QPropertyAnimation,
+    QUrl,
     Qt,
 )
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -16,21 +18,23 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from pdf_reme.presentation import backend_gateway
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.pages.dashboard_page import DashboardPage
+from pdf_reme.presentation.pages.favorites_page import FavoritesPage
+from pdf_reme.presentation.pages.library_page import LibraryPage
+from pdf_reme.presentation.pages.recent_page import RecentPage
+from pdf_reme.presentation.pages.trash_page import TrashPage
+from pdf_reme.presentation.pages.viewer_page import ViewerPage
 from pdf_reme.presentation.theme import get_theme_manager
 from pdf_reme.presentation.widgets.sidebar import Sidebar
 
 
-# Sidebar'daki tüm V1 nav öğeleri için placeholder sayfalar.
-# Başlık metni sidebar.nav.<key> çeviri anahtarıyla paylaşılır
-# (ikisi de aynı metni gösterir), açıklama ise placeholder.<key>.description.
+# Sidebar'daki, henüz gerçek arayüzü olmayan V1 nav öğeleri için
+# placeholder sayfalar. Başlık metni sidebar.nav.<key> çeviri
+# anahtarıyla paylaşılır (ikisi de aynı metni gösterir), açıklama
+# ise placeholder.<key>.description.
 PLACEHOLDER_PAGE_KEYS = (
-    "library",
-    "favorites",
-    "recent",
-    "trash",
-    "viewer",
     "merge",
     "split",
     "edit",
@@ -38,6 +42,16 @@ PLACEHOLDER_PAGE_KEYS = (
     "compress",
     "security",
     "settings",
+)
+
+# refresh() metoduna sahip, her show_page() çağrısında
+# kendini güncel backend verisiyle tazeleyen sayfalar.
+REFRESHABLE_PAGE_KEYS = (
+    "dashboard",
+    "library",
+    "favorites",
+    "recent",
+    "trash",
 )
 
 _THEME_FADE_OUT_MS = 110
@@ -224,6 +238,10 @@ class MainWindow(QMainWindow):
             self.show_page
         )
 
+        dashboard_page.document_open_requested.connect(
+            self._open_document
+        )
+
         self._pages[
             "dashboard"
         ] = dashboard_page
@@ -231,6 +249,40 @@ class MainWindow(QMainWindow):
         self.page_stack.addWidget(
             dashboard_page
         )
+
+        # =====================================================
+        # KÜTÜPHANE + FAVORİLER + SON KULLANILANLAR + ÇÖP KUTUSU
+        # =====================================================
+
+        library_page = LibraryPage()
+        library_page.document_open_requested.connect(self._open_document)
+        self._pages["library"] = library_page
+        self.page_stack.addWidget(library_page)
+
+        favorites_page = FavoritesPage()
+        favorites_page.document_open_requested.connect(self._open_document)
+        self._pages["favorites"] = favorites_page
+        self.page_stack.addWidget(favorites_page)
+
+        recent_page = RecentPage()
+        recent_page.document_open_requested.connect(self._open_document)
+        self._pages["recent"] = recent_page
+        self.page_stack.addWidget(recent_page)
+
+        trash_page = TrashPage()
+        self._pages["trash"] = trash_page
+        self.page_stack.addWidget(trash_page)
+
+        # =====================================================
+        # PDF GÖRÜNTÜLEYİCİ
+        # =====================================================
+
+        viewer_page = ViewerPage()
+        viewer_page.open_library_requested.connect(
+            lambda: self.show_page("library")
+        )
+        self._pages["viewer"] = viewer_page
+        self.page_stack.addWidget(viewer_page)
 
         # =====================================================
         # TEMPORARY PLACEHOLDER PAGES
@@ -370,6 +422,27 @@ class MainWindow(QMainWindow):
             page_key
         )
 
+        if page_key in REFRESHABLE_PAGE_KEYS:
+            page.refresh()
+
+    def _open_document(
+        self,
+        document_id: str,
+    ) -> None:
+        document = backend_gateway.mark_as_opened(document_id)
+
+        if document.document_type == "pdf":
+            self._pages["viewer"].load_document(
+                document.stored_path,
+                document.display_name,
+            )
+
+            self.show_page("viewer")
+        else:
+            QDesktopServices.openUrl(
+                QUrl.fromLocalFile(document.stored_path)
+            )
+
     def _on_language_changed(
         self,
         _language: str,
@@ -382,6 +455,9 @@ class MainWindow(QMainWindow):
 
         if dashboard is not None:
             dashboard.retranslate_ui()
+
+        for key in ("library", "favorites", "recent", "trash", "viewer"):
+            self._pages[key].retranslate_ui()
 
         for key in self._placeholder_labels:
             self._retranslate_placeholder(
@@ -520,3 +596,6 @@ class MainWindow(QMainWindow):
 
         if dashboard is not None:
             dashboard.apply_theme()
+
+        for key in ("library", "favorites", "recent", "trash", "viewer"):
+            self._pages[key].apply_theme()

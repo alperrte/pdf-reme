@@ -30,6 +30,7 @@ class AppPaths:
         self.imported_pdf_dir = self.imported_dir / "pdf"
         self.imported_word_dir = self.imported_dir / "word"
         self.imported_powerpoint_dir = self.imported_dir / "powerpoint"
+        self.imported_excel_dir = self.imported_dir / "excel"
         self.imported_images_dir = self.imported_dir / "images"
         self.thumbnails_dir = self.data_dir / "thumbnails"
         self.sessions_dir = self.data_dir / "sessions"
@@ -60,6 +61,7 @@ class AppPaths:
             self.imported_pdf_dir,
             self.imported_word_dir,
             self.imported_powerpoint_dir,
+            self.imported_excel_dir,
             self.imported_images_dir,
         ]
 

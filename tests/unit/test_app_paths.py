@@ -17,4 +17,5 @@ def test_imported_library_directories_are_created(tmp_path, monkeypatch):
     assert paths.imported_pdf_dir.is_dir()
     assert paths.imported_word_dir.is_dir()
     assert paths.imported_powerpoint_dir.is_dir()
+    assert paths.imported_excel_dir.is_dir()
     assert paths.imported_images_dir.is_dir()

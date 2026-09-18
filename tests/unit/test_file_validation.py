@@ -24,7 +24,7 @@ def test_detect_document_type_is_case_insensitive():
 
 
 def test_unsupported_extension_returns_none():
-    assert detect_document_type("sample.xlsx") is None
+    assert detect_document_type("sample.txt") is None
     assert detect_document_type("sample.txt") is None
 
 
@@ -91,7 +91,7 @@ def test_missing_file_is_rejected(tmp_path):
 
 
 def test_unsupported_file_is_rejected(tmp_path):
-    unsupported_path = tmp_path / "sample.xlsx"
+    unsupported_path = tmp_path / "sample.txt"
     unsupported_path.write_bytes(b"dummy content")
 
     result = validate_file(unsupported_path)
@@ -158,3 +158,42 @@ def test_fake_pptx_is_rejected(tmp_path):
     assert result.is_valid is False
     assert result.document_type == "powerpoint"
     assert result.error is not None
+
+
+def create_valid_xlsx(path):
+    with ZipFile(path, "w") as archive:
+        archive.writestr("[Content_Types].xml", "<Types></Types>")
+        archive.writestr("xl/workbook.xml", "<workbook></workbook>")
+
+
+def test_valid_xlsx_is_accepted(tmp_path):
+    xlsx_path = tmp_path / "valid.xlsx"
+    create_valid_xlsx(xlsx_path)
+
+    result = validate_file(xlsx_path)
+
+    assert result.is_valid is True
+    assert result.document_type == "excel"
+    assert result.extension == ".xlsx"
+
+
+def test_fake_xlsx_is_rejected(tmp_path):
+    xlsx_path = tmp_path / "fake.xlsx"
+    xlsx_path.write_bytes(b"this is not a real xlsx")
+
+    result = validate_file(xlsx_path)
+
+    assert result.is_valid is False
+    assert result.document_type == "excel"
+    assert result.error is not None
+
+
+def test_xlsx_without_workbook_part_is_rejected(tmp_path):
+    xlsx_path = tmp_path / "broken.xlsx"
+    with ZipFile(xlsx_path, "w") as archive:
+        archive.writestr("[Content_Types].xml", "<Types></Types>")
+
+    result = validate_file(xlsx_path)
+
+    assert result.is_valid is False
+    assert result.document_type == "excel"

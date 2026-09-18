@@ -452,6 +452,532 @@ QPushButton[navButton="true"]:pressed {
     border: 1px solid #BFD7FE;
 }
 
+#libraryUploadButton {
+    background-color: #2563EB;
+
+    border: none;
+    border-radius: 8px;
+
+    padding: 8px 16px;
+
+    color: #FFFFFF;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 13px;
+}
+
+#libraryUploadButton:hover {
+    background-color: #1D4ED8;
+}
+
+/* ---------------------------------------------------------
+   DOCUMENT CARD (Kütüphane / Favoriler / Son Kullanılanlar / Çöp Kutusu)
+   --------------------------------------------------------- */
+
+#documentCard {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 14px;
+}
+
+#documentCardTitle {
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 13px;
+}
+
+#documentCardMeta {
+    color: #9AA6B7;
+
+    font-size: 11px;
+}
+
+#documentCardIconButton {
+    background-color: transparent;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 8px;
+}
+
+#documentCardIconButton:hover {
+    background-color: #F3F7FC;
+
+    border: 1px solid #D7E2F0;
+}
+
+#documentCardIconButton[danger="true"]:hover {
+    background-color: #FDECEB;
+
+    border: 1px solid #F6C6C2;
+}
+
+
+/* ---------------------------------------------------------
+   LIST TOOLBAR (Arama / Sıralama)
+   --------------------------------------------------------- */
+
+#pageSearchInput {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 10px;
+
+    padding: 8px 12px 8px 34px;
+
+    color: #172033;
+
+    font-size: 13px;
+}
+
+#pageSearchInput:focus {
+    border: 1px solid #93C5FD;
+}
+
+/* ---------------------------------------------------------
+   TYPE FILTER CHIPS
+   --------------------------------------------------------- */
+
+#typeFilterChip {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 16px;
+
+    padding: 6px 14px;
+
+    color: #53637A;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+}
+
+#typeFilterChip:hover {
+    background-color: #F3F7FC;
+
+    border: 1px solid #D7E2F0;
+}
+
+#typeFilterChip:checked {
+    border: 1px solid #BFD7FE;
+
+    color: #1859C9;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+}
+
+#typeFilterChip[accentColor="neutral"]:checked {
+    background-color: #EBF3FF;
+}
+
+#typeFilterChip[accentColor="red"]:checked {
+    background-color: #FDECEB;
+}
+
+#typeFilterChip[accentColor="blue"]:checked {
+    background-color: #E9F0FE;
+}
+
+#typeFilterChip[accentColor="purple"]:checked {
+    background-color: #F2EAFC;
+}
+
+#typeFilterChip[accentColor="green"]:checked {
+    background-color: #E4F9F0;
+}
+
+#typeFilterChip[accentColor="teal"]:checked {
+    background-color: #E1F5F2;
+}
+
+
+#pageSortCombo {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 10px;
+}
+
+#pageSortCombo:hover {
+    background-color: #F8FAFD;
+
+    border: 1px solid #D7E2F0;
+}
+
+#pageSortComboText {
+    background: transparent;
+
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+}
+
+#dropdownPanel {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 12px;
+}
+
+#dropdownItem {
+    background-color: transparent;
+
+    border: none;
+    border-radius: 8px;
+
+    padding: 8px 12px;
+
+    color: #3A4A63;
+
+    text-align: left;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+}
+
+#dropdownItem:hover {
+    background-color: #F3F7FC;
+}
+
+#dropdownItem[selected="true"] {
+    background-color: #EBF3FF;
+
+    color: #1859C9;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+}
+
+#selectionToggleButton {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 10px;
+
+    padding: 0 14px;
+
+    color: #3A4A63;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+}
+
+#selectionToggleButton:hover {
+    background-color: #F3F7FC;
+
+    border: 1px solid #D7E2F0;
+}
+
+#selectionToggleButton:checked {
+    background-color: #EBF3FF;
+
+    border: 1px solid #BFD7FE;
+
+    color: #1859C9;
+}
+
+#selectionBar {
+    background-color: #F5F9FF;
+
+    border: 1px solid #D7E6FC;
+    border-radius: 12px;
+}
+
+#selectionBarLabelButton {
+    background: transparent;
+
+    border: none;
+
+    padding: 4px 2px;
+
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 12px;
+}
+
+#selectionBarCount {
+    background: transparent;
+
+    color: #6B7A90;
+
+    font-size: 12px;
+}
+
+#selectionBarActionButton {
+    background-color: #FFFFFF;
+
+    border: 1px solid #D7E2F0;
+    border-radius: 8px;
+
+    padding: 6px 12px;
+
+    color: #1859C9;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+}
+
+#selectionBarActionButton:hover {
+    background-color: #EBF3FF;
+}
+
+#selectionBarActionButton[danger="true"] {
+    border: 1px solid #F6C6C2;
+
+    color: #D33A2E;
+}
+
+#selectionBarActionButton[danger="true"]:hover {
+    background-color: #FDECEB;
+}
+
+#selectionBarActionButton:disabled {
+    background-color: #F3F5F9;
+
+    border: 1px solid #E5EAF1;
+
+    color: #B4BECC;
+}
+
+#documentCard[selected="true"] {
+    background-color: #F5F9FF;
+
+    border: 1px solid #93C5FD;
+}
+
+#dropOverlay {
+    background-color: rgba(235, 243, 255, 235);
+
+    border: 2px dashed #60A5FA;
+    border-radius: 16px;
+}
+
+#dropOverlayTitle {
+    background: transparent;
+
+    color: #1859C9;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 18px;
+}
+
+#dropOverlayBody {
+    background: transparent;
+
+    color: #53637A;
+
+    font-size: 13px;
+}
+
+/* ---------------------------------------------------------
+   APP DIALOG (PDF-REME onay / bilgi pencereleri)
+   --------------------------------------------------------- */
+
+#appDialogCard {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 18px;
+}
+
+#appDialogIconBubble {
+    border-radius: 26px;
+}
+
+#appDialogIconBubble[accentColor="red"] {
+    background-color: #FDECEB;
+}
+
+#appDialogIconBubble[accentColor="blue"] {
+    background-color: #E9F0FE;
+}
+
+#appDialogIconBubble[accentColor="green"] {
+    background-color: #E4F9F0;
+}
+
+#appDialogIconBubble[accentColor="purple"] {
+    background-color: #F2EAFC;
+}
+
+#appDialogTitle {
+    background: transparent;
+
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans";
+    font-weight: 700;
+    font-size: 17px;
+}
+
+#appDialogBody {
+    background: transparent;
+
+    color: #53637A;
+
+    font-size: 13px;
+}
+
+#appDialogItemsScroll {
+    background: transparent;
+
+    border: none;
+}
+
+#appDialogItemsContainer {
+    background: transparent;
+}
+
+#appDialogItemRow {
+    background-color: #F8FAFD;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 10px;
+}
+
+#appDialogItemName {
+    background: transparent;
+
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+}
+
+#appDialogItemDetail {
+    background: transparent;
+
+    color: #9AA6B7;
+
+    font-size: 11px;
+}
+
+#appDialogCancelButton {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 10px;
+
+    padding: 9px 20px;
+
+    color: #3A4A63;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 13px;
+}
+
+#appDialogCancelButton:hover {
+    background-color: #F3F7FC;
+
+    border: 1px solid #D7E2F0;
+}
+
+#appDialogConfirmButton {
+    border: none;
+    border-radius: 10px;
+
+    padding: 9px 22px;
+
+    color: #FFFFFF;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 13px;
+}
+
+#appDialogConfirmButton[variant="primary"],
+#appDialogConfirmButton[variant="info"] {
+    background-color: #2563EB;
+}
+
+#appDialogConfirmButton[variant="primary"]:hover,
+#appDialogConfirmButton[variant="info"]:hover {
+    background-color: #1D4ED8;
+}
+
+#appDialogConfirmButton[variant="success"] {
+    background-color: #16A34A;
+}
+
+#appDialogConfirmButton[variant="success"]:hover {
+    background-color: #15803D;
+}
+
+#appDialogConfirmButton[variant="danger"] {
+    background-color: #DC3B30;
+}
+
+#appDialogConfirmButton[variant="danger"]:hover {
+    background-color: #C22D23;
+}
+
+#dashboardActionIconContainer[accentColor="sky"] {
+    background-color: #E0F4FE;
+}
+
+#dashboardActionIconContainer[accentColor="orange"] {
+    background-color: #FEEDE7;
+}
+
+#typeFilterChip[accentColor="sky"]:checked {
+    background-color: #E0F4FE;
+}
+
+#typeFilterChip[accentColor="orange"]:checked {
+    background-color: #FEEDE7;
+}
+
+
+/* ---------------------------------------------------------
+   MESSAGE BOX
+   --------------------------------------------------------- */
+
+QMessageBox {
+    background-color: #FFFFFF;
+}
+
+QMessageBox QLabel {
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 13px;
+}
+
+QMessageBox QPushButton {
+    background-color: transparent;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 8px;
+
+    padding: 6px 18px;
+
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+
+    min-width: 70px;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #F1F5FB;
+}
+
+QMessageBox QPushButton:default {
+    background-color: #2563EB;
+
+    border: none;
+
+    color: #FFFFFF;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+}
+
+QMessageBox QPushButton:default:hover {
+    background-color: #1D4ED8;
+}
+
 
 /* =========================================================
    SCROLLBAR
@@ -712,6 +1238,337 @@ QToolTip {
     background-color: #1C2A42;
 
     border: 1px solid #2E4468;
+}
+
+#appRoot[theme="dark"] #libraryUploadButton {
+    background-color: #3B82F6;
+
+    color: #FFFFFF;
+}
+
+#appRoot[theme="dark"] #libraryUploadButton:hover {
+    background-color: #2563EB;
+}
+
+#appRoot[theme="dark"] #documentCard {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #documentCardTitle {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #documentCardMeta {
+    color: #5B6579;
+}
+
+#appRoot[theme="dark"] #documentCardIconButton {
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #documentCardIconButton:hover {
+    background-color: #1A2030;
+
+    border: 1px solid #2C374E;
+}
+
+#appRoot[theme="dark"] #documentCardIconButton[danger="true"]:hover {
+    background-color: #3B2226;
+
+    border: 1px solid #5A3236;
+}
+
+#appRoot[theme="dark"] #pageSearchInput {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #pageSearchInput:focus {
+    border: 1px solid #3B82F6;
+}
+
+#appRoot[theme="dark"] #typeFilterChip {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+
+    color: #9AA6B7;
+}
+
+#appRoot[theme="dark"] #typeFilterChip:hover {
+    background-color: #1A2030;
+
+    border: 1px solid #2C374E;
+}
+
+#appRoot[theme="dark"] #typeFilterChip:checked {
+    border: 1px solid #2E4468;
+
+    color: #93C5FD;
+}
+
+#appRoot[theme="dark"] #typeFilterChip[accentColor="neutral"]:checked {
+    background-color: #1C2A42;
+}
+
+#appRoot[theme="dark"] #typeFilterChip[accentColor="red"]:checked {
+    background-color: #3B2226;
+}
+
+#appRoot[theme="dark"] #typeFilterChip[accentColor="blue"]:checked {
+    background-color: #1D2A40;
+}
+
+#appRoot[theme="dark"] #typeFilterChip[accentColor="purple"]:checked {
+    background-color: #2B2142;
+}
+
+#appRoot[theme="dark"] #typeFilterChip[accentColor="green"]:checked {
+    background-color: #163A2A;
+}
+
+#appRoot[theme="dark"] #typeFilterChip[accentColor="teal"]:checked {
+    background-color: #123B38;
+}
+
+#appRoot[theme="dark"] #pageSortCombo {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #pageSortCombo:hover {
+    background-color: #1A2030;
+
+    border: 1px solid #2C374E;
+}
+
+#appRoot[theme="dark"] #pageSortComboText {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #dropdownPanel {
+    background-color: #171D2C;
+
+    border: 1px solid #2C374E;
+}
+
+#appRoot[theme="dark"] #dropdownItem {
+    color: #B4BECC;
+}
+
+#appRoot[theme="dark"] #dropdownItem:hover {
+    background-color: #1F2740;
+}
+
+#appRoot[theme="dark"] #dropdownItem[selected="true"] {
+    background-color: #1C2A42;
+
+    color: #93C5FD;
+}
+
+#appRoot[theme="dark"] #selectionToggleButton {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+
+    color: #B4BECC;
+}
+
+#appRoot[theme="dark"] #selectionToggleButton:hover {
+    background-color: #1A2030;
+
+    border: 1px solid #2C374E;
+}
+
+#appRoot[theme="dark"] #selectionToggleButton:checked {
+    background-color: #1C2A42;
+
+    border: 1px solid #2E4468;
+
+    color: #93C5FD;
+}
+
+#appRoot[theme="dark"] #selectionBar {
+    background-color: #17233A;
+
+    border: 1px solid #2E4468;
+}
+
+#appRoot[theme="dark"] #selectionBarLabelButton {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #selectionBarCount {
+    color: #8B97AB;
+}
+
+#appRoot[theme="dark"] #selectionBarActionButton {
+    background-color: #171D2C;
+
+    border: 1px solid #2C374E;
+
+    color: #93C5FD;
+}
+
+#appRoot[theme="dark"] #selectionBarActionButton:hover {
+    background-color: #1C2A42;
+}
+
+#appRoot[theme="dark"] #selectionBarActionButton[danger="true"] {
+    border: 1px solid #5A3236;
+
+    color: #F28B82;
+}
+
+#appRoot[theme="dark"] #selectionBarActionButton[danger="true"]:hover {
+    background-color: #3B2226;
+}
+
+#appRoot[theme="dark"] #selectionBarActionButton:disabled {
+    background-color: #141926;
+
+    border: 1px solid #232B3D;
+
+    color: #4B5568;
+}
+
+#appRoot[theme="dark"] #documentCard[selected="true"] {
+    background-color: #17233A;
+
+    border: 1px solid #3B82F6;
+}
+
+#appRoot[theme="dark"] #dropOverlay {
+    background-color: rgba(18, 26, 44, 235);
+
+    border: 2px dashed #3B82F6;
+}
+
+#appRoot[theme="dark"] #dropOverlayTitle {
+    color: #93C5FD;
+}
+
+#appRoot[theme="dark"] #dropOverlayBody {
+    color: #9AA6B7;
+}
+
+#appRoot[theme="dark"] #appDialogCard {
+    background-color: #171D2C;
+
+    border: 1px solid #2C374E;
+}
+
+#appRoot[theme="dark"] #appDialogIconBubble[accentColor="red"] {
+    background-color: #3B2226;
+}
+
+#appRoot[theme="dark"] #appDialogIconBubble[accentColor="blue"] {
+    background-color: #1D2A40;
+}
+
+#appRoot[theme="dark"] #appDialogIconBubble[accentColor="green"] {
+    background-color: #163A2A;
+}
+
+#appRoot[theme="dark"] #appDialogIconBubble[accentColor="purple"] {
+    background-color: #2B2142;
+}
+
+#appRoot[theme="dark"] #appDialogTitle {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #appDialogBody {
+    color: #9AA6B7;
+}
+
+#appRoot[theme="dark"] #appDialogItemRow {
+    background-color: #1A2030;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #appDialogItemName {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #appDialogItemDetail {
+    color: #6B778C;
+}
+
+#appRoot[theme="dark"] #appDialogCancelButton {
+    background-color: #171D2C;
+
+    border: 1px solid #2C374E;
+
+    color: #B4BECC;
+}
+
+#appRoot[theme="dark"] #appDialogCancelButton:hover {
+    background-color: #1C2A42;
+}
+
+#appRoot[theme="dark"] #appDialogConfirmButton[variant="primary"],
+#appRoot[theme="dark"] #appDialogConfirmButton[variant="info"] {
+    background-color: #3B82F6;
+}
+
+#appRoot[theme="dark"] #appDialogConfirmButton[variant="primary"]:hover,
+#appRoot[theme="dark"] #appDialogConfirmButton[variant="info"]:hover {
+    background-color: #2563EB;
+}
+
+#appRoot[theme="dark"] #dashboardActionIconContainer[accentColor="sky"] {
+    background-color: #12324A;
+}
+
+#appRoot[theme="dark"] #dashboardActionIconContainer[accentColor="orange"] {
+    background-color: #3D2419;
+}
+
+#appRoot[theme="dark"] #typeFilterChip[accentColor="sky"]:checked {
+    background-color: #12324A;
+}
+
+#appRoot[theme="dark"] #typeFilterChip[accentColor="orange"]:checked {
+    background-color: #3D2419;
+}
+
+
+#appRoot[theme="dark"] QMessageBox {
+    background-color: #171D2C;
+}
+
+#appRoot[theme="dark"] QMessageBox QLabel {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] QMessageBox QPushButton {
+    border: 1px solid #232B3D;
+
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] QMessageBox QPushButton:hover {
+    background-color: #1C2A42;
+}
+
+#appRoot[theme="dark"] QMessageBox QPushButton:default {
+    background-color: #3B82F6;
+
+    border: none;
+
+    color: #FFFFFF;
+}
+
+#appRoot[theme="dark"] QMessageBox QPushButton:default:hover {
+    background-color: #2563EB;
 }
 
 #appRoot[theme="dark"] QScrollBar::handle:vertical {

@@ -14,9 +14,17 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from pdf_reme.presentation import backend_gateway
+from pdf_reme.presentation.document_format import (
+    format_document_meta,
+    type_icon,
+)
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.theme import get_theme_manager
+from pdf_reme.presentation.thumbnails import image_thumbnail
 
+
+_RECENT_PANEL_LIMIT = 5
 
 CARD_SHADOW_BLUR_REST = 26
 CARD_SHADOW_BLUR_HOVER = 42
@@ -275,6 +283,9 @@ class RecentDocumentRow(QFrame):
         *,
         file_name: str,
         meta_text: str,
+        icon_name: str = "fa5s.file-pdf",
+        icon_accent: str = "red",
+        image_path: str | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -282,6 +293,16 @@ class RecentDocumentRow(QFrame):
         self._language_manager = get_language_manager()
 
         self._theme_manager = get_theme_manager()
+
+        self._thumbnail = (
+            image_thumbnail(image_path, 40, 8, self.devicePixelRatioF())
+            if image_path
+            else None
+        )
+
+        self._icon_name = icon_name
+
+        self._icon_accent = icon_accent
 
         self.setObjectName(
             "recentDocumentRow"
@@ -343,20 +364,6 @@ class RecentDocumentRow(QFrame):
             meta_label
         )
 
-        self._open_button = QPushButton()
-
-        self._open_button.setObjectName(
-            "recentDocumentOpenButton"
-        )
-
-        self._open_button.setCursor(
-            Qt.CursorShape.PointingHandCursor
-        )
-
-        self._open_button.clicked.connect(
-            self.open_requested.emit
-        )
-
         layout.addWidget(
             self._icon_label
         )
@@ -366,8 +373,9 @@ class RecentDocumentRow(QFrame):
             1,
         )
 
-        layout.addWidget(
-            self._open_button
+        # Satırın tamamı tıklanabilir; ayrı bir "Aç" butonu yok.
+        self.setCursor(
+            Qt.CursorShape.PointingHandCursor
         )
 
         self.retranslate_ui()
@@ -377,20 +385,33 @@ class RecentDocumentRow(QFrame):
     def retranslate_ui(
         self,
     ) -> None:
-        self._open_button.setText(
-            self._language_manager.tr(
-                "dashboard.action.open"
-            )
-        )
+        pass
+
+    def mouseReleaseEvent(
+        self,
+        event,
+    ) -> None:
+        if (
+            event.button() == Qt.MouseButton.LeftButton
+            and self.rect().contains(event.position().toPoint())
+        ):
+            self.open_requested.emit()
+
+        super().mouseReleaseEvent(event)
 
     def apply_theme(
         self,
     ) -> None:
+        if self._thumbnail is not None:
+            self._icon_label.setPixmap(self._thumbnail)
+
+            return
+
         self._icon_label.setPixmap(
             qta.icon(
-                "fa5s.file-pdf",
+                self._icon_name,
                 color=self._theme_manager.accent_hex(
-                    "red"
+                    self._icon_accent
                 ),
             ).pixmap(
                 24,
@@ -401,6 +422,7 @@ class RecentDocumentRow(QFrame):
 
 class DashboardPage(QWidget):
     page_requested = Signal(str)
+    document_open_requested = Signal(str)
 
     def __init__(
         self,
@@ -417,6 +439,8 @@ class DashboardPage(QWidget):
         self._tool_buttons: list[
             tuple[QPushButton, str, str],
         ] = []
+
+        self._recent_rows: list[RecentDocumentRow] = []
 
         self.setObjectName(
             "dashboardPage"
@@ -653,6 +677,8 @@ class DashboardPage(QWidget):
         recent_layout = QVBoxLayout(
             self._recent_panel
         )
+
+        self._recent_layout = recent_layout
 
         recent_layout.setContentsMargins(
             20,
@@ -943,3 +969,45 @@ class DashboardPage(QWidget):
         panel.setGraphicsEffect(
             shadow
         )
+
+    def refresh(self) -> None:
+        for row in self._recent_rows:
+            row.setParent(None)
+            row.deleteLater()
+
+        self._recent_rows.clear()
+
+        documents = backend_gateway.fetch_recent(
+            limit=_RECENT_PANEL_LIMIT
+        )
+
+        self._empty_recent_label.setVisible(not documents)
+
+        for document in documents:
+            icon_name, icon_accent = type_icon(document.document_type)
+
+            row = RecentDocumentRow(
+                file_name=document.display_name,
+                meta_text=format_document_meta(
+                    document,
+                    date=document.last_opened_at,
+                ),
+                icon_name=icon_name,
+                icon_accent=icon_accent,
+                image_path=(
+                    document.stored_path
+                    if document.document_type == "image"
+                    else None
+                ),
+            )
+
+            row.open_requested.connect(
+                lambda document_id=document.id:
+                    self.document_open_requested.emit(
+                        document_id
+                    )
+            )
+
+            self._recent_layout.addWidget(row)
+
+            self._recent_rows.append(row)

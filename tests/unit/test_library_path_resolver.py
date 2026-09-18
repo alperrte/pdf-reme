@@ -45,4 +45,9 @@ def test_image_resolves_to_images_directory(paths):
 
 def test_unsupported_document_type_raises_value_error(paths):
     with pytest.raises(ValueError):
-        resolve_import_directory("excel", paths)
+        resolve_import_directory("unknown", paths)
+
+
+def test_excel_resolves_to_excel_directory(paths):
+    result = resolve_import_directory("excel", paths)
+    assert result == paths.imported_excel_dir

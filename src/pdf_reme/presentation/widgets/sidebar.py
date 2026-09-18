@@ -286,12 +286,6 @@ class Sidebar(QFrame):
 
         self._add_nav_button(
             layout=navigation_layout,
-            key="viewer",
-            icon="fa5s.eye",
-        )
-
-        self._add_nav_button(
-            layout=navigation_layout,
             key="merge",
             icon="fa5s.object-group",
         )

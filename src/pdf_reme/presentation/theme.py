@@ -30,6 +30,8 @@ THEMES: dict[str, dict[str, str | dict[str, str]]] = {
             "purple": "#7C3AED",
             "green": "#10B981",
             "teal": "#0D9488",
+            "sky": "#0EA5E9",
+            "orange": "#E4572E",
         },
     },
     DARK_THEME: {
@@ -50,6 +52,8 @@ THEMES: dict[str, dict[str, str | dict[str, str]]] = {
             "purple": "#8B5CF6",
             "green": "#22C55E",
             "teal": "#2DD4BF",
+            "sky": "#38BDF8",
+            "orange": "#FB7A55",
         },
     },
 }

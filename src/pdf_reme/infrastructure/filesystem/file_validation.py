@@ -11,6 +11,8 @@ SUPPORTED_EXTENSIONS = {
     ".docx": "word",
     ".ppt": "powerpoint",
     ".pptx": "powerpoint",
+    ".xls": "excel",
+    ".xlsx": "excel",
     ".jpg": "image",
     ".jpeg": "image",
     ".png": "image",
@@ -59,7 +61,7 @@ def validate_file(file_path: str | Path) -> FileValidationResult:
         elif document_type == "image":
             with Image.open(path) as image:
                 image.verify()
-        elif extension in {".docx", ".pptx"}:
+        elif extension in {".docx", ".pptx", ".xlsx"}:
             _validate_ooxml_file(path, document_type)        
 
     except Exception:
@@ -91,6 +93,10 @@ def _validate_ooxml_file(path: Path, document_type: str) -> None:
             elif document_type == "powerpoint":
                 if "ppt/presentation.xml" not in names:
                     raise ValueError("Geçersiz PPTX dosyası.")
+
+            elif document_type == "excel":
+                if "xl/workbook.xml" not in names:
+                    raise ValueError("Geçersiz XLSX dosyası.")
 
     except BadZipFile as exc:
         raise ValueError("Geçersiz Office paketi.") from exc

@@ -117,7 +117,7 @@ def test_corrupted_pdf_stops_before_hash_and_duplicate_check(tmp_path):
 def test_unsupported_file_is_rejected(tmp_path):
     engine, session, _, service = create_test_environment()
 
-    file_path = tmp_path / "unsupported.xlsx"
+    file_path = tmp_path / "unsupported.txt"
     file_path.write_bytes(b"dummy")
 
     result = service.inspect(file_path)
