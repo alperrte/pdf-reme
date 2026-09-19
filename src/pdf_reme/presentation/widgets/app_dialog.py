@@ -2,8 +2,8 @@ from dataclasses import dataclass
 
 import qtawesome as qta
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
@@ -23,6 +23,11 @@ from pdf_reme.presentation.theme import get_theme_manager
 _SHADOW_MARGIN = 26
 _DIALOG_WIDTH = 440
 _ITEMS_MAX_HEIGHT = 230
+
+# Ana pencerenin üzerini örten yarı saydam arka plan; kartın dışına
+# tıklamak pencereyi kapatır. (Tam saydam pikseller Windows'ta tıklamayı
+# alta geçirdiği için alfa sıfır olamaz.)
+_BACKDROP_ALPHA = 80
 
 # variant -> (ikon, tema aksan rengi)
 _VARIANT_ICONS = {
@@ -63,6 +68,7 @@ class AppDialog(QDialog):
         self._theme_manager = get_theme_manager()
         self._chosen_action: str | None = None
         self._confirm_action = confirm_action
+        self._covers_parent = False
 
         self._variant = variant if variant in _VARIANT_ICONS else "primary"
         self._icon_name = icon_name or _VARIANT_ICONS[self._variant][0]
@@ -75,7 +81,6 @@ class AppDialog(QDialog):
             | Qt.WindowType.NoDropShadowWindowHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setFixedWidth(_DIALOG_WIDTH + _SHADOW_MARGIN * 2)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(
@@ -87,6 +92,8 @@ class AppDialog(QDialog):
 
         card = QFrame()
         card.setObjectName("appDialogCard")
+        card.setFixedWidth(_DIALOG_WIDTH)
+        self._card = card
 
         shadow = QGraphicsDropShadowEffect(card)
         shadow.setBlurRadius(46)
@@ -95,7 +102,7 @@ class AppDialog(QDialog):
         shadow.setColor(QColor(0, 0, 0, 90))
         card.setGraphicsEffect(shadow)
 
-        outer.addWidget(card)
+        outer.addWidget(card, 0, Qt.AlignmentFlag.AlignCenter)
 
         layout = QVBoxLayout(card)
         layout.setContentsMargins(28, 28, 28, 24)
@@ -186,6 +193,7 @@ class AppDialog(QDialog):
         layout.addLayout(button_row)
 
         self._apply_theme()
+        self._cover_parent()
 
     def _choose(
         self,
@@ -281,20 +289,48 @@ class AppDialog(QDialog):
             ).pixmap(22, 22)
         )
 
+    def _cover_parent(self) -> None:
+        """Ana pencerenin istemci alanını örter; kart ortada kalır."""
+        anchor = self.parentWidget()
+
+        if anchor is None:
+            self._covers_parent = False
+            return
+
+        anchor = anchor.window()
+
+        self._covers_parent = True
+        self.setGeometry(
+            anchor.mapToGlobal(QPoint(0, 0)).x(),
+            anchor.mapToGlobal(QPoint(0, 0)).y(),
+            anchor.width(),
+            anchor.height(),
+        )
+
     def showEvent(self, event) -> None:
         super().showEvent(event)
 
-        # Ana pencerenin ortasına hizala.
-        anchor = self.parentWidget()
+        # Pencere taşınmış/yeniden boyutlanmış olabilir.
+        self._cover_parent()
 
-        if anchor is not None:
-            anchor = anchor.window()
-            center = anchor.frameGeometry().center()
+    def paintEvent(self, event) -> None:
+        if not self._covers_parent:
+            return
 
-            geometry = self.frameGeometry()
-            geometry.moveCenter(center)
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), QColor(0, 0, 0, _BACKDROP_ALPHA))
 
-            self.move(geometry.topLeft())
+    def mousePressEvent(self, event) -> None:
+        # Kartın dışındaki boşluğa tıklamak Esc ile aynıdır (iptal / kapat).
+        if (
+            self._covers_parent
+            and event.button() == Qt.MouseButton.LeftButton
+            and not self._card.geometry().contains(event.position().toPoint())
+        ):
+            self.reject()
+            return
+
+        super().mousePressEvent(event)
 
     @staticmethod
     def ask(
