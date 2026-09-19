@@ -711,6 +711,12 @@ class Sidebar(QFrame):
                 True
             )
 
+    @property
+    def theme_button(
+        self,
+    ) -> QPushButton:
+        return self._theme_button
+
     def _refresh_theme_button(
         self,
     ) -> None:

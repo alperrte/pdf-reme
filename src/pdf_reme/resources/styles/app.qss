@@ -1055,11 +1055,11 @@ QToolTip {
 }
 
 #appRoot[theme="dark"] #sidebarSectionTitle {
-    color: #5B6579;
+    color: #94A0B4;
 }
 
 #appRoot[theme="dark"] QPushButton[navButton="true"] {
-    color: #8A94A8;
+    color: #A3ADC0;
 }
 
 #appRoot[theme="dark"] QPushButton[navButton="true"]:hover {
@@ -1081,7 +1081,7 @@ QToolTip {
 }
 
 #appRoot[theme="dark"] #sidebarFooter {
-    color: #4C566B;
+    color: #7F8AA0;
 }
 
 #appRoot[theme="dark"] #sidebarDivider {
@@ -1123,7 +1123,7 @@ QToolTip {
 }
 
 #appRoot[theme="dark"] #pageDescription {
-    color: #8A94A8;
+    color: #A3ADC0;
 }
 
 #appRoot[theme="dark"] #dashboardTitle {
@@ -1131,7 +1131,7 @@ QToolTip {
 }
 
 #appRoot[theme="dark"] #dashboardSubtitle {
-    color: #8A94A8;
+    color: #A3ADC0;
 }
 
 #appRoot[theme="dark"] #dashboardSectionTitle {
@@ -1173,7 +1173,7 @@ QToolTip {
 }
 
 #appRoot[theme="dark"] #dashboardActionDescription {
-    color: #7C879C;
+    color: #A3ADC0;
 }
 
 #appRoot[theme="dark"] #dashboardPanel {
@@ -1205,7 +1205,7 @@ QToolTip {
 }
 
 #appRoot[theme="dark"] #dashboardEmptyText {
-    color: #5B6579;
+    color: #94A0B4;
 }
 
 #appRoot[theme="dark"] #recentDocumentRow {
@@ -1225,7 +1225,7 @@ QToolTip {
 }
 
 #appRoot[theme="dark"] #recentDocumentMeta {
-    color: #5B6579;
+    color: #94A0B4;
 }
 
 #appRoot[theme="dark"] #recentDocumentOpenButton {
@@ -1261,7 +1261,7 @@ QToolTip {
 }
 
 #appRoot[theme="dark"] #documentCardMeta {
-    color: #5B6579;
+    color: #94A0B4;
 }
 
 #appRoot[theme="dark"] #documentCardIconButton {
@@ -1405,7 +1405,7 @@ QToolTip {
 }
 
 #appRoot[theme="dark"] #selectionBarCount {
-    color: #8B97AB;
+    color: #A9B4C7;
 }
 
 #appRoot[theme="dark"] #selectionBarActionButton {
@@ -1435,7 +1435,7 @@ QToolTip {
 
     border: 1px solid #232B3D;
 
-    color: #4B5568;
+    color: #667389;
 }
 
 #appRoot[theme="dark"] #documentCard[selected="true"] {
@@ -1499,7 +1499,7 @@ QToolTip {
 }
 
 #appRoot[theme="dark"] #appDialogItemDetail {
-    color: #6B778C;
+    color: #9BA6BA;
 }
 
 #appRoot[theme="dark"] #appDialogCancelButton {

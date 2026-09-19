@@ -1,14 +1,11 @@
 from PySide6.QtCore import (
-    QEasingCurve,
-    QPropertyAnimation,
+    QPointF,
     QUrl,
-    Qt,
 )
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
-    QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -28,6 +25,12 @@ from pdf_reme.presentation.pages.trash_page import TrashPage
 from pdf_reme.presentation.pages.viewer_page import ViewerPage
 from pdf_reme.presentation.theme import get_theme_manager
 from pdf_reme.presentation.widgets.sidebar import Sidebar
+from pdf_reme.presentation.widgets.language_transition import (
+    LanguageTransitionOverlay,
+)
+from pdf_reme.presentation.widgets.theme_transition import (
+    ThemeTransitionOverlay,
+)
 
 
 # Sidebar'daki, henüz gerçek arayüzü olmayan V1 nav öğeleri için
@@ -53,9 +56,6 @@ REFRESHABLE_PAGE_KEYS = (
     "recent",
     "trash",
 )
-
-_THEME_FADE_OUT_MS = 110
-_THEME_FADE_IN_MS = 170
 
 
 class MainWindow(QMainWindow):
@@ -92,11 +92,9 @@ class MainWindow(QMainWindow):
             tuple[QLabel, QLabel],
         ] = {}
 
-        self._theme_transition_animation: QPropertyAnimation | None = None
-
-        self._theme_overlay: QWidget | None = None
-
-        self._theme_overlay_effect: QGraphicsOpacityEffect | None = None
+        self._theme_overlay: ThemeTransitionOverlay | None = None
+        self._language_overlay: LanguageTransitionOverlay | None = None
+        self._shown_language = self._language_manager.current_language
 
         self._setup_ui()
         self._setup_pages()
@@ -196,33 +194,11 @@ class MainWindow(QMainWindow):
             root
         )
 
-        # Tema geçişi sırasında ekranı geçici olarak kaplayan,
-        # tamamen opak bir örtü widget'ı. Pencerenin native
-        # opaklığına (windowOpacity) hiç dokunmadığı için işletim
-        # sistemi düzeyinde bir şeffaflaşma/masaüstünün görünmesi
-        # riski taşımaz; kendi başına ayrı bir widget olduğundan
-        # (içinde başka QGraphicsEffect'li alt widget barındırmaz)
-        # sidebar/kartlardaki gölge efektleriyle de çakışmaz.
-        self._theme_overlay = QWidget(root)
+        # Tema geçişinde güneş/ay animasyonunu oynatan örtü.
+        self._theme_overlay = ThemeTransitionOverlay(root)
 
-        self._theme_overlay.setAttribute(
-            Qt.WidgetAttribute.WA_StyledBackground,
-            True,
-        )
-
-        self._theme_overlay.hide()
-
-        self._theme_overlay_effect = QGraphicsOpacityEffect(
-            self._theme_overlay
-        )
-
-        self._theme_overlay_effect.setOpacity(
-            0.0
-        )
-
-        self._theme_overlay.setGraphicsEffect(
-            self._theme_overlay_effect
-        )
+        # Dil değişiminde bulanıklaşıp bayrak çeviren örtü.
+        self._language_overlay = LanguageTransitionOverlay(root)
 
     def _setup_pages(
         self,
@@ -445,7 +421,44 @@ class MainWindow(QMainWindow):
 
     def _on_language_changed(
         self,
-        _language: str,
+        language: str,
+    ) -> None:
+        previous = self._shown_language
+        self._shown_language = language
+
+        overlay = self._language_overlay
+
+        if overlay.is_running:
+            overlay.stop()
+
+        # Geçiş sırasında tema örtüsü açıksa onu bitir.
+        if self._theme_overlay.is_running:
+            self._theme_overlay.stop()
+
+        # Pencere görünmüyorsa animasyonsuz uygula.
+        if not self.isVisible():
+            self._apply_language()
+            return
+
+        old_frame = self._root.grab()
+
+        overlay.hide()
+
+        self._apply_language()
+
+        QApplication.sendPostedEvents()
+
+        new_frame = self._root.grab()
+
+        overlay.start(
+            old_frame,
+            new_frame,
+            old_language=previous,
+            new_language=language,
+        )
+
+    def _apply_language(
+        self,
     ) -> None:
         self.sidebar.retranslate_ui()
 
@@ -468,100 +481,46 @@ class MainWindow(QMainWindow):
         self,
         theme: str,
     ) -> None:
-        if self._theme_transition_animation is not None:
-            self._theme_transition_animation.stop()
-
         overlay = self._theme_overlay
 
-        effect = self._theme_overlay_effect
+        if overlay.is_running:
+            overlay.stop()
 
-        # Native pencere opaklığı (windowOpacity) yerine, kendi
-        # üzerinde başka bir QGraphicsEffect barındırmayan, tamamen
-        # opak bir Qt widget'ı ile ekranı geçici olarak örtüyoruz.
-        # Bu örtü, işletim sistemi/kompozitör seviyesinde gerçek bir
-        # şeffaflığa asla dönüşmez (masaüstü hiçbir zaman açığa
-        # çıkamaz); ağır ve senkron QSS yeniden uygulaması, örtü tam
-        # opak durumdayken (opacity=1.0) çalıştırılır, böylece bu iş
-        # sırasında ekranda görünen tek şey düz bir renk olur.
-        current_tokens = self._theme_manager.tokens()
+        if self._language_overlay.is_running:
+            self._language_overlay.stop()
 
-        overlay.setStyleSheet(
-            "background-color: "
-            f"{current_tokens['window_bg']};"
+        # Pencere görünmüyorsa (ör. başlangıç) animasyonsuz uygula.
+        if not self.isVisible():
+            self._apply_theme(theme)
+            return
+
+        # Eski görüntüyü al, temayı (ağır QSS yenilemesi) ekran
+        # donmadan uygula, yeni görüntüyü al; animasyon sadece bu iki
+        # resmi karıştırır.
+        old_frame = self._root.grab()
+
+        overlay.setGeometry(self._root.rect())
+        overlay.hide()
+
+        self._apply_theme(theme)
+
+        QApplication.sendPostedEvents()
+
+        new_frame = self._root.grab()
+
+        theme_button = self.sidebar.theme_button
+
+        overlay.start(
+            old_frame,
+            new_frame,
+            to_dark=theme == "dark",
+            target=QPointF(
+                theme_button.mapTo(
+                    self._root,
+                    theme_button.rect().center(),
+                )
+            ),
         )
-
-        overlay.setGeometry(
-            self._root.rect()
-        )
-
-        overlay.raise_()
-
-        overlay.show()
-
-        fade_in = QPropertyAnimation(
-            effect,
-            b"opacity",
-            self,
-        )
-
-        fade_in.setDuration(
-            _THEME_FADE_OUT_MS
-        )
-
-        fade_in.setStartValue(
-            0.0
-        )
-
-        fade_in.setEndValue(
-            1.0
-        )
-
-        fade_in.setEasingCurve(
-            QEasingCurve.Type.OutCubic
-        )
-
-        def _apply_and_fade_out() -> None:
-            self._apply_theme(
-                theme
-            )
-
-            fade_out = QPropertyAnimation(
-                effect,
-                b"opacity",
-                self,
-            )
-
-            fade_out.setDuration(
-                _THEME_FADE_IN_MS
-            )
-
-            fade_out.setStartValue(
-                1.0
-            )
-
-            fade_out.setEndValue(
-                0.0
-            )
-
-            fade_out.setEasingCurve(
-                QEasingCurve.Type.InCubic
-            )
-
-            fade_out.finished.connect(
-                overlay.hide
-            )
-
-            fade_out.start()
-
-            self._theme_transition_animation = fade_out
-
-        fade_in.finished.connect(
-            _apply_and_fade_out
-        )
-
-        fade_in.start()
-
-        self._theme_transition_animation = fade_in
 
     def _apply_theme(
         self,

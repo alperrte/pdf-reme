@@ -40,7 +40,7 @@ THEMES: dict[str, dict[str, str | dict[str, str]]] = {
         "surface": "#171D2C",
         "sidebar_bg": "#12141F",
         "text": "#E6EAF2",
-        "muted_text": "#8A94A8",
+        "muted_text": "#A3ADC0",
         "border": "#232B3D",
         "icon_neutral": "#94A3B8",
         "accent_primary": "#3B82F6",
