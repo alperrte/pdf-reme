@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
 from pdf_reme.presentation import backend_gateway
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.pages.dashboard_page import DashboardPage
+from pdf_reme.presentation.pages.convert_page import ConvertPage
+from pdf_reme.presentation.pages.edit_page import EditPage
 from pdf_reme.presentation.pages.favorites_page import FavoritesPage
 from pdf_reme.presentation.pages.library_page import LibraryPage
 from pdf_reme.presentation.pages.recent_page import RecentPage
@@ -40,8 +42,6 @@ from pdf_reme.presentation.widgets.theme_transition import (
 PLACEHOLDER_PAGE_KEYS = (
     "merge",
     "split",
-    "edit",
-    "convert",
     "compress",
     "security",
     "settings",
@@ -261,6 +261,20 @@ class MainWindow(QMainWindow):
         self.page_stack.addWidget(viewer_page)
 
         # =====================================================
+        # PDF DÜZENLE + PDF DÖNÜŞTÜR
+        # =====================================================
+
+        edit_page = EditPage()
+        edit_page.document_open_requested.connect(self._open_document)
+        self._pages["edit"] = edit_page
+        self.page_stack.addWidget(edit_page)
+
+        convert_page = ConvertPage()
+        convert_page.page_requested.connect(self.show_page)
+        self._pages["convert"] = convert_page
+        self.page_stack.addWidget(convert_page)
+
+        # =====================================================
         # TEMPORARY PLACEHOLDER PAGES
         # =====================================================
 
@@ -276,6 +290,14 @@ class MainWindow(QMainWindow):
             self.page_stack.addWidget(
                 page
             )
+
+    def closeEvent(self, event) -> None:
+        # Arka plan işi sürerken pencere kapanırsa iş parçacığı yarıda kalmasın;
+        # düzenleme çalışma klasörü de temizlensin.
+        for key in ("edit", "convert"):
+            self._pages[key].shutdown()
+
+        super().closeEvent(event)
 
     def _create_placeholder_page(
         self,
@@ -469,7 +491,15 @@ class MainWindow(QMainWindow):
         if dashboard is not None:
             dashboard.retranslate_ui()
 
-        for key in ("library", "favorites", "recent", "trash", "viewer"):
+        for key in (
+            "library",
+            "favorites",
+            "recent",
+            "trash",
+            "viewer",
+            "edit",
+            "convert",
+        ):
             self._pages[key].retranslate_ui()
 
         for key in self._placeholder_labels:
@@ -556,5 +586,13 @@ class MainWindow(QMainWindow):
         if dashboard is not None:
             dashboard.apply_theme()
 
-        for key in ("library", "favorites", "recent", "trash", "viewer"):
+        for key in (
+            "library",
+            "favorites",
+            "recent",
+            "trash",
+            "viewer",
+            "edit",
+            "convert",
+        ):
             self._pages[key].apply_theme()

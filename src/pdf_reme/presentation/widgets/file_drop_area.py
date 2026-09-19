@@ -13,8 +13,14 @@ class DropOverlay(QFrame):
     def __init__(
         self,
         parent: QWidget | None = None,
+        *,
+        title_key: str = "library.drop_hint_title",
+        body_key: str = "library.drop_hint_body",
     ) -> None:
         super().__init__(parent)
+
+        self._title_key = title_key
+        self._body_key = body_key
 
         self._language_manager = get_language_manager()
         self._theme_manager = get_theme_manager()
@@ -47,10 +53,10 @@ class DropOverlay(QFrame):
 
     def retranslate_ui(self) -> None:
         self._title_label.setText(
-            self._language_manager.tr("library.drop_hint_title")
+            self._language_manager.tr(self._title_key)
         )
         self._body_label.setText(
-            self._language_manager.tr("library.drop_hint_body")
+            self._language_manager.tr(self._body_key)
         )
 
     def apply_theme(self) -> None:

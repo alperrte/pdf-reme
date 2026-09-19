@@ -286,6 +286,18 @@ class Sidebar(QFrame):
 
         self._add_nav_button(
             layout=navigation_layout,
+            key="edit",
+            icon="fa5s.edit",
+        )
+
+        self._add_nav_button(
+            layout=navigation_layout,
+            key="convert",
+            icon="fa5s.exchange-alt",
+        )
+
+        self._add_nav_button(
+            layout=navigation_layout,
             key="merge",
             icon="fa5s.object-group",
         )
@@ -298,12 +310,6 @@ class Sidebar(QFrame):
 
         self._add_nav_button(
             layout=navigation_layout,
-            key="edit",
-            icon="fa5s.edit",
-        )
-
-        self._add_nav_button(
-            layout=navigation_layout,
             key="compress",
             icon="fa5s.compress-arrows-alt",
         )
@@ -312,21 +318,6 @@ class Sidebar(QFrame):
             layout=navigation_layout,
             key="security",
             icon="fa5s.lock",
-        )
-
-        # -----------------------------------------------------
-        # DÖNÜŞTÜRME
-        # -----------------------------------------------------
-
-        self._add_section_title(
-            navigation_layout,
-            "sidebar.section.convert",
-        )
-
-        self._add_nav_button(
-            layout=navigation_layout,
-            key="convert",
-            icon="fa5s.exchange-alt",
         )
 
         navigation_layout.addStretch()

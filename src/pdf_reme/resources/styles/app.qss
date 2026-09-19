@@ -1584,3 +1584,781 @@ QToolTip {
 
     color: #12141F;
 }
+
+/* ---------------------------------------------------------
+   PDF DÖNÜŞTÜR / PDF DÜZENLE ortak bileşenleri
+   --------------------------------------------------------- */
+
+#opDropZone {
+    background-color: #F8FAFD;
+
+    border: 2px dashed #C9D8EE;
+    border-radius: 16px;
+}
+
+#opDropZoneTitle {
+    background: transparent;
+
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 17px;
+}
+
+#opDropZoneHint {
+    background: transparent;
+
+    color: #6B7A90;
+
+    font-size: 13px;
+}
+
+#opPrimaryButton {
+    background-color: #2563EB;
+
+    border: none;
+    border-radius: 8px;
+
+    padding: 9px 18px;
+
+    color: #FFFFFF;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 13px;
+}
+
+#opPrimaryButton:hover {
+    background-color: #1D4ED8;
+}
+
+#opPrimaryButton:disabled {
+    background-color: #B9CDF6;
+}
+
+#opSecondaryButton {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 10px;
+
+    padding: 8px 14px;
+
+    color: #3A4A63;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+}
+
+#opSecondaryButton:hover {
+    background-color: #F3F7FC;
+
+    border: 1px solid #D7E2F0;
+}
+
+#opSecondaryButton:disabled {
+    color: #A9B4C4;
+}
+
+#opIconButton {
+    background-color: transparent;
+
+    border: none;
+    border-radius: 8px;
+}
+
+#opIconButton:hover {
+    background-color: #EEF3FA;
+}
+
+#opCard {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 14px;
+}
+
+#opFieldLabel {
+    background: transparent;
+
+    color: #53637A;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+}
+
+#opHint {
+    background: transparent;
+
+    color: #6B7A90;
+
+    font-size: 12px;
+}
+
+#opWarning {
+    background-color: #FFF4EC;
+
+    border: 1px solid #FBD5BB;
+    border-radius: 10px;
+
+    padding: 9px 12px;
+
+    color: #B8461B;
+
+    font-size: 12px;
+}
+
+#opInput {
+    background-color: #F8FAFD;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 10px;
+
+    padding: 0 12px;
+
+    color: #172033;
+
+    font-size: 13px;
+}
+
+#opInput:focus {
+    background-color: #FFFFFF;
+
+    border: 1px solid #93C5FD;
+}
+
+#opInput:disabled {
+    color: #A9B4C4;
+}
+
+#opFileRow {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 12px;
+}
+
+#opFileName {
+    background: transparent;
+
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 13px;
+}
+
+#opFileDetail {
+    background: transparent;
+
+    color: #9AA6B7;
+
+    font-size: 11px;
+}
+
+#convertKindBadge {
+    border-radius: 16px;
+}
+
+#convertKindBadge[accentColor="sky"] {
+    background-color: #E3F4FD;
+}
+
+#convertKindBadge[accentColor="red"] {
+    background-color: #FDECEB;
+}
+
+#convertKindBadge[accentColor="blue"] {
+    background-color: #E9F0FE;
+}
+
+#convertKindBadge[accentColor="orange"] {
+    background-color: #FFF0E6;
+}
+
+#convertKindIcon {
+    background: transparent;
+}
+
+#convertKindText {
+    background: transparent;
+
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 12px;
+}
+
+#busyOverlay {
+    background-color: rgba(255, 255, 255, 190);
+}
+
+#busyOverlayLabel {
+    background: transparent;
+
+    color: #1859C9;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 14px;
+}
+
+#editSourceChip {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 12px;
+}
+
+#editSourceName {
+    background: transparent;
+
+    color: #172033;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 13px;
+}
+
+#editToolButton {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 10px;
+
+    padding: 8px 7px;
+
+    color: #3A4A63;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+}
+
+#editToolButton:hover {
+    background-color: #F3F7FC;
+
+    border: 1px solid #D7E2F0;
+}
+
+#editToolButton[danger="true"] {
+    color: #C0392B;
+}
+
+#editToolButton[danger="true"]:hover {
+    background-color: #FDECEB;
+
+    border: 1px solid #F6C8C4;
+}
+
+#editToolButton:disabled {
+    background-color: #F8FAFD;
+
+    color: #A9B4C4;
+}
+
+#editThumb {
+    background-color: #FFFFFF;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 12px;
+}
+
+#editThumb:hover {
+    border: 1px solid #C9D8EE;
+}
+
+#editThumb[selected="true"] {
+    background-color: #F5F9FF;
+
+    border: 2px solid #2563EB;
+}
+
+#editThumbImage {
+    background-color: #F2F5FA;
+
+    border-radius: 4px;
+}
+
+#editThumbNumber {
+    background: transparent;
+
+    color: #53637A;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 11px;
+}
+
+#pickerList {
+    background: transparent;
+
+    border: none;
+
+    outline: none;
+}
+
+#pickerList::item {
+    background-color: #F8FAFD;
+
+    border: 1px solid #E5EAF1;
+    border-radius: 10px;
+}
+
+#pickerList::item:hover {
+    background-color: #F3F7FC;
+}
+
+#pickerList::item:selected {
+    background-color: #EBF3FF;
+
+    border: 1px solid #93C5FD;
+}
+
+#pickerRow {
+    background: transparent;
+}
+
+#pickerEmptyText {
+    background: transparent;
+
+    color: #6B7A90;
+
+    font-size: 13px;
+}
+
+#pickerComputerButton {
+    background-color: #FFFFFF;
+
+    border: 1px dashed #BFD7FE;
+    border-radius: 10px;
+
+    padding: 10px 16px;
+
+    color: #1859C9;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 13px;
+}
+
+#pickerComputerButton:hover {
+    background-color: #EBF3FF;
+}
+
+/* --- Koyu tema --- */
+
+#appRoot[theme="dark"] #opDropZone {
+    background-color: #141A28;
+
+    border: 2px dashed #2C374E;
+}
+
+#appRoot[theme="dark"] #opDropZoneTitle {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #opDropZoneHint {
+    color: #9AA6B7;
+}
+
+#appRoot[theme="dark"] #opPrimaryButton {
+    background-color: #3B82F6;
+}
+
+#appRoot[theme="dark"] #opPrimaryButton:hover {
+    background-color: #2563EB;
+}
+
+#appRoot[theme="dark"] #opPrimaryButton:disabled {
+    background-color: #243352;
+
+    color: #6F7C93;
+}
+
+#appRoot[theme="dark"] #opSecondaryButton {
+    background-color: #171D2C;
+
+    border: 1px solid #2C374E;
+
+    color: #B4BECC;
+}
+
+#appRoot[theme="dark"] #opSecondaryButton:hover {
+    background-color: #1C2A42;
+}
+
+#appRoot[theme="dark"] #opSecondaryButton:disabled {
+    color: #5A667C;
+}
+
+#appRoot[theme="dark"] #opIconButton:hover {
+    background-color: #1C2A42;
+}
+
+#appRoot[theme="dark"] #opCard {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #opFieldLabel {
+    color: #9AA6B7;
+}
+
+#appRoot[theme="dark"] #opHint {
+    color: #94A0B4;
+}
+
+#appRoot[theme="dark"] #opWarning {
+    background-color: #3A2519;
+
+    border: 1px solid #5B3823;
+
+    color: #FDBA8C;
+}
+
+#appRoot[theme="dark"] #opInput {
+    background-color: #1A2030;
+
+    border: 1px solid #2C374E;
+
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #opInput:focus {
+    background-color: #171D2C;
+
+    border: 1px solid #3B82F6;
+}
+
+#appRoot[theme="dark"] #opInput:disabled {
+    color: #5A667C;
+}
+
+#appRoot[theme="dark"] #opFileRow {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #opFileName {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #opFileDetail {
+    color: #9BA6BA;
+}
+
+#appRoot[theme="dark"] #convertKindBadge[accentColor="sky"] {
+    background-color: #12324A;
+}
+
+#appRoot[theme="dark"] #convertKindBadge[accentColor="red"] {
+    background-color: #3B2226;
+}
+
+#appRoot[theme="dark"] #convertKindBadge[accentColor="blue"] {
+    background-color: #1D2A40;
+}
+
+#appRoot[theme="dark"] #convertKindBadge[accentColor="orange"] {
+    background-color: #3A2519;
+}
+
+#appRoot[theme="dark"] #convertKindText {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #busyOverlay {
+    background-color: rgba(15, 20, 33, 190);
+}
+
+#appRoot[theme="dark"] #busyOverlayLabel {
+    color: #93C5FD;
+}
+
+#appRoot[theme="dark"] #editSourceChip {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #editSourceName {
+    color: #E6EAF2;
+}
+
+#appRoot[theme="dark"] #editToolButton {
+    background-color: #171D2C;
+
+    border: 1px solid #2C374E;
+
+    color: #B4BECC;
+}
+
+#appRoot[theme="dark"] #editToolButton:hover {
+    background-color: #1C2A42;
+}
+
+#appRoot[theme="dark"] #editToolButton[danger="true"] {
+    color: #F28B82;
+}
+
+#appRoot[theme="dark"] #editToolButton[danger="true"]:hover {
+    background-color: #3B2226;
+
+    border: 1px solid #5B3036;
+}
+
+#appRoot[theme="dark"] #editToolButton:disabled {
+    background-color: #141A28;
+
+    color: #5A667C;
+}
+
+#appRoot[theme="dark"] #editThumb {
+    background-color: #171D2C;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #editThumb:hover {
+    border: 1px solid #2C374E;
+}
+
+#appRoot[theme="dark"] #editThumb[selected="true"] {
+    background-color: #17233A;
+
+    border: 2px solid #3B82F6;
+}
+
+#appRoot[theme="dark"] #editThumbImage {
+    background-color: #1F2638;
+}
+
+#appRoot[theme="dark"] #editThumbNumber {
+    color: #9AA6B7;
+}
+
+#appRoot[theme="dark"] #pickerList::item {
+    background-color: #1A2030;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #pickerList::item:hover {
+    background-color: #1C2A42;
+}
+
+#appRoot[theme="dark"] #pickerList::item:selected {
+    background-color: #17233A;
+
+    border: 1px solid #3B82F6;
+}
+
+#appRoot[theme="dark"] #pickerEmptyText {
+    color: #9AA6B7;
+}
+
+#appRoot[theme="dark"] #pickerComputerButton {
+    background-color: #171D2C;
+
+    border: 1px dashed #2E4468;
+
+    color: #93C5FD;
+}
+
+#appRoot[theme="dark"] #pickerComputerButton:hover {
+    background-color: #1C2A42;
+}
+
+/* =========================================================
+   ARAÇ SAYFALARI: ilerleme, segment, kaydırmalı sayfa görünümü
+   ========================================================= */
+
+#busyProgress {
+    background-color: #DCE6F5;
+
+    border: none;
+    border-radius: 4px;
+
+    min-height: 8px;
+    max-height: 8px;
+}
+
+#busyProgress::chunk {
+    background-color: #2563EB;
+
+    border-radius: 4px;
+}
+
+#busyProgressLabel {
+    background: transparent;
+
+    color: #1859C9;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 15px;
+}
+
+#busyOverlayDetail {
+    background: transparent;
+
+    color: #6B7A90;
+
+    font-size: 12px;
+}
+
+#opSegment {
+    background-color: #FFFFFF;
+
+    border: 1px solid #D7E2F0;
+    border-radius: 0px;
+
+    padding: 8px 16px;
+
+    color: #3A4A63;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 12px;
+}
+
+#opSegment[segmentPosition="first"] {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+
+#opSegment[segmentPosition="middle"] {
+    border-left: none;
+}
+
+#opSegment[segmentPosition="last"] {
+    border-left: none;
+
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+#opSegment:hover {
+    background-color: #F3F7FC;
+}
+
+#opSegment:checked {
+    background-color: #E8F0FE;
+
+    border-color: #93B4F5;
+
+    color: #1D4ED8;
+}
+
+#editStripScroll,
+#editStripScroll QWidget#qt_scrollarea_viewport,
+#editStripContent {
+    background-color: transparent;
+
+    border: none;
+}
+
+#pageScrollArea {
+    background-color: #EAEFF7;
+
+    border: 1px solid #E0E7F2;
+    border-radius: 14px;
+}
+
+#pageScrollArea QWidget#qt_scrollarea_viewport,
+#pageScrollContent {
+    background-color: transparent;
+}
+
+#pageViewFrame {
+    background-color: #FFFFFF;
+
+    border: 1px solid #CBD5E4;
+}
+
+#pageViewFrame[selected="true"] {
+    border: 3px solid #2563EB;
+}
+
+#pageViewFrame[flash="true"] {
+    border: 3px solid #F59E0B;
+}
+
+#pageViewNumber {
+    background: transparent;
+
+    color: #6B7A90;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 11px;
+}
+
+#editPageIndicator {
+    background: transparent;
+
+    color: #3A4A63;
+
+    font-family: "Plus Jakarta Sans SemiBold";
+    font-size: 13px;
+}
+
+#appRoot[theme="dark"] #busyProgress {
+    background-color: #243352;
+}
+
+#appRoot[theme="dark"] #busyProgress::chunk {
+    background-color: #3B82F6;
+}
+
+#appRoot[theme="dark"] #busyProgressLabel {
+    color: #93C5FD;
+}
+
+#appRoot[theme="dark"] #busyOverlayDetail {
+    color: #94A0B4;
+}
+
+#appRoot[theme="dark"] #opSegment {
+    background-color: #171D2C;
+
+    border: 1px solid #2C374E;
+
+    color: #B4BECC;
+}
+
+#appRoot[theme="dark"] #opSegment[segmentPosition="middle"],
+#appRoot[theme="dark"] #opSegment[segmentPosition="last"] {
+    border-left: none;
+}
+
+#appRoot[theme="dark"] #opSegment:hover {
+    background-color: #1C2A42;
+}
+
+#appRoot[theme="dark"] #opSegment:checked {
+    background-color: #17233A;
+
+    border-color: #3B82F6;
+
+    color: #93C5FD;
+}
+
+#appRoot[theme="dark"] #pageScrollArea {
+    background-color: #10151F;
+
+    border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #pageViewFrame {
+    border: 1px solid #2C374E;
+}
+
+#appRoot[theme="dark"] #pageViewFrame[selected="true"] {
+    border: 3px solid #3B82F6;
+}
+
+#appRoot[theme="dark"] #pageViewFrame[flash="true"] {
+    border: 3px solid #FBBF24;
+}
+
+#appRoot[theme="dark"] #pageViewNumber {
+    color: #9AA6B7;
+}
+
+#appRoot[theme="dark"] #editPageIndicator {
+    color: #D5DCE8;
+}

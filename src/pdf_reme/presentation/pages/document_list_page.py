@@ -339,6 +339,7 @@ class DocumentListPage(QWidget):
             card.delete_forever_requested.connect(
                 self._on_delete_forever_requested
             )
+            card.reveal_requested.connect(self._on_reveal_requested)
             card.selection_toggled.connect(self._on_card_selection_toggled)
 
             card.set_selection_mode(self._selection_mode)
@@ -453,6 +454,25 @@ class DocumentListPage(QWidget):
     def _on_favorite_toggled(self, document_id: str) -> None:
         backend_gateway.toggle_favorite(document_id)
         self.refresh()
+
+    def _on_reveal_requested(self, document_id: str) -> None:
+        document = self._document_by_id(document_id)
+
+        if document is None:
+            return
+
+        try:
+            backend_gateway.reveal_in_folder(document.stored_path)
+
+        except backend_gateway.OperationError:
+            language_manager = get_language_manager()
+
+            AppDialog.inform(
+                self.window(),
+                title=language_manager.tr("op.error.reveal_failed_title"),
+                body=language_manager.tr("op.error.reveal_failed"),
+                variant="danger",
+            )
 
     def _on_trash_requested(self, document_id: str) -> None:
         document = self._document_by_id(document_id)

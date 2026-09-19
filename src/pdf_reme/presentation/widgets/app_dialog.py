@@ -55,10 +55,12 @@ class AppDialog(QDialog):
         variant: str = "primary",
         icon_name: str | None = None,
         items: list[DialogItem] | None = None,
+        extra_actions: list[tuple[str, str]] | None = None,
     ) -> None:
         super().__init__(parent)
 
         self._theme_manager = get_theme_manager()
+        self._chosen_action: str | None = None
 
         self._variant = variant if variant in _VARIANT_ICONS else "primary"
         self._icon_name = icon_name or _VARIANT_ICONS[self._variant][0]
@@ -150,6 +152,24 @@ class AppDialog(QDialog):
 
             button_row.addWidget(cancel_button, 1)
 
+        if extra_actions:
+            # Ek eylemler üst satırda; onay düğmesi altta tam genişlikte.
+            extra_row = QHBoxLayout()
+            extra_row.setSpacing(10)
+
+            for action_key, action_text in extra_actions:
+                extra_button = QPushButton(action_text)
+                extra_button.setObjectName("appDialogCancelButton")
+                extra_button.setCursor(Qt.CursorShape.PointingHandCursor)
+                extra_button.clicked.connect(
+                    lambda _=False, key=action_key: self._choose(key)
+                )
+
+                extra_row.addWidget(extra_button, 1)
+
+            layout.addLayout(extra_row)
+            layout.addSpacing(10)
+
         confirm_button = QPushButton(confirm_text)
         confirm_button.setObjectName("appDialogConfirmButton")
         confirm_button.setProperty("variant", self._variant)
@@ -162,6 +182,17 @@ class AppDialog(QDialog):
         layout.addLayout(button_row)
 
         self._apply_theme()
+
+    def _choose(
+        self,
+        action_key: str,
+    ) -> None:
+        self._chosen_action = action_key
+        self.accept()
+
+    @property
+    def chosen_action(self) -> str | None:
+        return self._chosen_action
 
     def _build_items(
         self,
@@ -312,3 +343,37 @@ class AppDialog(QDialog):
         )
 
         dialog.exec()
+
+    @staticmethod
+    def choose(
+        parent: QWidget | None,
+        *,
+        title: str,
+        body: str,
+        confirm_text: str,
+        extra_actions: list[tuple[str, str]],
+        variant: str = "success",
+        icon_name: str | None = None,
+        items: list[DialogItem] | None = None,
+    ) -> str | None:
+        """Ek eylem düğmeli sonuç penceresi.
+
+        Seçilen ek eylemin anahtarını döndürür; onay düğmesi ya da kapatma
+        için None.
+        """
+
+        dialog = AppDialog(
+            parent,
+            title=title,
+            body=body,
+            confirm_text=confirm_text,
+            cancel_text=None,
+            variant=variant,
+            icon_name=icon_name,
+            items=items,
+            extra_actions=extra_actions,
+        )
+
+        dialog.exec()
+
+        return dialog.chosen_action

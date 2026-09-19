@@ -39,6 +39,7 @@ class DocumentCard(QFrame):
     trash_requested = Signal(str)
     restore_requested = Signal(str)
     delete_forever_requested = Signal(str)
+    reveal_requested = Signal(str)
 
     def __init__(
         self,
@@ -153,6 +154,18 @@ class DocumentCard(QFrame):
 
         button_row.setSpacing(6)
 
+        self._reveal_button = QPushButton()
+
+        self._reveal_button.setObjectName("documentCardIconButton")
+
+        self._reveal_button.setFixedSize(34, 34)
+
+        self._reveal_button.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        self._reveal_button.clicked.connect(
+            lambda: self.reveal_requested.emit(self._document_id)
+        )
+
         if self._variant == "trash":
             self._restore_button = QPushButton()
 
@@ -179,6 +192,7 @@ class DocumentCard(QFrame):
             )
 
             button_row.addWidget(self._restore_button)
+            button_row.addWidget(self._reveal_button)
             button_row.addWidget(self._delete_forever_button)
         else:
             self._favorite_button = QPushButton()
@@ -205,6 +219,7 @@ class DocumentCard(QFrame):
                 lambda: self.trash_requested.emit(self._document_id)
             )
 
+            button_row.addWidget(self._reveal_button)
             button_row.addWidget(self._favorite_button)
             button_row.addWidget(self._trash_button)
 
@@ -221,6 +236,10 @@ class DocumentCard(QFrame):
         self._update_cursor()
 
     def retranslate_ui(self) -> None:
+        self._reveal_button.setToolTip(
+            self._language_manager.tr("document.action.reveal")
+        )
+
         if self._variant == "trash":
             self._restore_button.setText(
                 self._language_manager.tr("document.action.restore")
@@ -244,6 +263,13 @@ class DocumentCard(QFrame):
 
     def apply_theme(self) -> None:
         self._selection_check.apply_theme()
+
+        self._reveal_button.setIcon(
+            qta.icon(
+                "fa5s.folder-open",
+                color=self._theme_manager.icon_color(),
+            )
+        )
 
         if self._thumbnail is not None:
             self._icon_label.setPixmap(self._thumbnail)
