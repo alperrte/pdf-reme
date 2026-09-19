@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from pdf_reme.presentation import app_settings
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.theme import get_theme_manager
 
@@ -347,6 +348,18 @@ class SplashScreen(QWidget):
             x,
             y,
         )
+
+    def show(
+        self,
+    ) -> None:
+        # Açılış animasyonu Ayarlar'dan kapatıldıysa pencere hiç gösterilmez;
+        # `finished` olay döngüsü başlar başlamaz yayılır.
+        if not app_settings.startup_animation():
+            QTimer.singleShot(0, self._finish)
+
+            return
+
+        super().show()
 
     def showEvent(
         self,

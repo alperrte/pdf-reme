@@ -1,5 +1,6 @@
 from PySide6.QtCore import (
     QPointF,
+    QTimer,
     QUrl,
 )
 from PySide6.QtGui import QDesktopServices
@@ -15,14 +16,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from pdf_reme.presentation import backend_gateway
+from pdf_reme.presentation import app_settings, backend_gateway
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.pages.dashboard_page import DashboardPage
 from pdf_reme.presentation.pages.convert_page import ConvertPage
 from pdf_reme.presentation.pages.edit_page import EditPage
 from pdf_reme.presentation.pages.favorites_page import FavoritesPage
+from pdf_reme.presentation.pages.compress_page import CompressPage
 from pdf_reme.presentation.pages.library_page import LibraryPage
+from pdf_reme.presentation.pages.merge_page import MergePage
 from pdf_reme.presentation.pages.recent_page import RecentPage
+from pdf_reme.presentation.pages.security_page import SecurityPage
+from pdf_reme.presentation.pages.settings_page import SettingsPage
+from pdf_reme.presentation.pages.split_page import SplitPage
 from pdf_reme.presentation.pages.trash_page import TrashPage
 from pdf_reme.presentation.pages.viewer_page import ViewerPage
 from pdf_reme.presentation.theme import get_theme_manager
@@ -39,13 +45,17 @@ from pdf_reme.presentation.widgets.theme_transition import (
 # placeholder sayfalar. Başlık metni sidebar.nav.<key> çeviri
 # anahtarıyla paylaşılır (ikisi de aynı metni gösterir), açıklama
 # ise placeholder.<key>.description.
-PLACEHOLDER_PAGE_KEYS = (
-    "merge",
-    "split",
-    "compress",
-    "security",
-    "settings",
+# Ortak PdfToolPage iskeletini kullanan PDF araç sayfaları.
+TOOL_PAGES = (
+    ("merge", MergePage),
+    ("split", SplitPage),
+    ("compress", CompressPage),
+    ("security", SecurityPage),
 )
+
+TOOL_PAGE_KEYS = tuple(key for key, _page_class in TOOL_PAGES)
+
+PLACEHOLDER_PAGE_KEYS: tuple[str, ...] = ()
 
 # refresh() metoduna sahip, her show_page() çağrısında
 # kendini güncel backend verisiyle tazeleyen sayfalar.
@@ -55,6 +65,7 @@ REFRESHABLE_PAGE_KEYS = (
     "favorites",
     "recent",
     "trash",
+    "settings",
 )
 
 
@@ -95,6 +106,7 @@ class MainWindow(QMainWindow):
         self._theme_overlay: ThemeTransitionOverlay | None = None
         self._language_overlay: LanguageTransitionOverlay | None = None
         self._shown_language = self._language_manager.current_language
+        self._startup_tasks_scheduled = False
 
         self._setup_ui()
         self._setup_pages()
@@ -275,6 +287,26 @@ class MainWindow(QMainWindow):
         self.page_stack.addWidget(convert_page)
 
         # =====================================================
+        # PDF BİRLEŞTİR + BÖL + SIKIŞTIR + ŞİFRELEME
+        # =====================================================
+
+        for key, page_class in TOOL_PAGES:
+            tool_page = page_class()
+            tool_page.page_requested.connect(self.show_page)
+            tool_page.document_open_requested.connect(self._open_document)
+            self._pages[key] = tool_page
+            self.page_stack.addWidget(tool_page)
+
+        # =====================================================
+        # AYARLAR
+        # =====================================================
+
+        settings_page = SettingsPage()
+        settings_page.defaults_changed.connect(self._apply_tool_defaults)
+        self._pages["settings"] = settings_page
+        self.page_stack.addWidget(settings_page)
+
+        # =====================================================
         # TEMPORARY PLACEHOLDER PAGES
         # =====================================================
 
@@ -294,10 +326,27 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event) -> None:
         # Arka plan işi sürerken pencere kapanırsa iş parçacığı yarıda kalmasın;
         # düzenleme çalışma klasörü de temizlensin.
-        for key in ("edit", "convert"):
+        for key in ("edit", "convert", *TOOL_PAGE_KEYS, "settings"):
             self._pages[key].shutdown()
 
         super().closeEvent(event)
+
+    def _apply_tool_defaults(self) -> None:
+        """Ayarlar'daki varsayılanlar değişince ilgili araç sayfalarını günceller."""
+        self._pages["compress"].apply_defaults()
+        self._pages["split"].apply_defaults()
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+
+        # Sessiz güncelleme denetimi (ayar açıksa) ilk gösterimden sonra bir kez.
+        if not self._startup_tasks_scheduled:
+            self._startup_tasks_scheduled = True
+
+            QTimer.singleShot(
+                1500,
+                self._pages["settings"].run_startup_check,
+            )
 
     def _create_placeholder_page(
         self,
@@ -457,8 +506,9 @@ class MainWindow(QMainWindow):
         if self._theme_overlay.is_running:
             self._theme_overlay.stop()
 
-        # Pencere görünmüyorsa animasyonsuz uygula.
-        if not self.isVisible():
+        # Pencere görünmüyorsa ya da animasyon Ayarlar'dan kapatıldıysa
+        # animasyonsuz uygula.
+        if not self.isVisible() or not app_settings.language_animation():
             self._apply_language()
             return
 
@@ -499,6 +549,8 @@ class MainWindow(QMainWindow):
             "viewer",
             "edit",
             "convert",
+            *TOOL_PAGE_KEYS,
+            "settings",
         ):
             self._pages[key].retranslate_ui()
 
@@ -519,8 +571,9 @@ class MainWindow(QMainWindow):
         if self._language_overlay.is_running:
             self._language_overlay.stop()
 
-        # Pencere görünmüyorsa (ör. başlangıç) animasyonsuz uygula.
-        if not self.isVisible():
+        # Pencere görünmüyorsa (ör. başlangıç) ya da animasyon Ayarlar'dan
+        # kapatıldıysa animasyonsuz uygula.
+        if not self.isVisible() or not app_settings.theme_animation():
             self._apply_theme(theme)
             return
 
@@ -594,5 +647,7 @@ class MainWindow(QMainWindow):
             "viewer",
             "edit",
             "convert",
+            *TOOL_PAGE_KEYS,
+            "settings",
         ):
             self._pages[key].apply_theme()

@@ -56,11 +56,13 @@ class AppDialog(QDialog):
         icon_name: str | None = None,
         items: list[DialogItem] | None = None,
         extra_actions: list[tuple[str, str]] | None = None,
+        confirm_action: str | None = None,
     ) -> None:
         super().__init__(parent)
 
         self._theme_manager = get_theme_manager()
         self._chosen_action: str | None = None
+        self._confirm_action = confirm_action
 
         self._variant = variant if variant in _VARIANT_ICONS else "primary"
         self._icon_name = icon_name or _VARIANT_ICONS[self._variant][0]
@@ -175,7 +177,9 @@ class AppDialog(QDialog):
         confirm_button.setProperty("variant", self._variant)
         confirm_button.setCursor(Qt.CursorShape.PointingHandCursor)
         confirm_button.setDefault(True)
-        confirm_button.clicked.connect(self.accept)
+        confirm_button.clicked.connect(
+            lambda: self._choose(self._confirm_action)
+        )
 
         button_row.addWidget(confirm_button, 1)
 
@@ -185,7 +189,7 @@ class AppDialog(QDialog):
 
     def _choose(
         self,
-        action_key: str,
+        action_key: str | None,
     ) -> None:
         self._chosen_action = action_key
         self.accept()
@@ -355,11 +359,12 @@ class AppDialog(QDialog):
         variant: str = "success",
         icon_name: str | None = None,
         items: list[DialogItem] | None = None,
+        confirm_action: str | None = None,
     ) -> str | None:
         """Ek eylem düğmeli sonuç penceresi.
 
-        Seçilen ek eylemin anahtarını döndürür; onay düğmesi ya da kapatma
-        için None.
+        Seçilen ek eylemin anahtarını döndürür. Onay düğmesi `confirm_action`
+        anahtarını (verilmediyse None), kapatma (Esc) her zaman None döndürür.
         """
 
         dialog = AppDialog(
@@ -372,6 +377,7 @@ class AppDialog(QDialog):
             icon_name=icon_name,
             items=items,
             extra_actions=extra_actions,
+            confirm_action=confirm_action,
         )
 
         dialog.exec()

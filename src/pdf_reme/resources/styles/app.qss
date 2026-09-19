@@ -1694,6 +1694,24 @@ QToolTip {
     font-size: 12px;
 }
 
+#settingsSectionTitle {
+    background: transparent;
+
+    color: #102447;
+
+    font-family: "Plus Jakarta Sans";
+    font-size: 15px;
+    font-weight: 700;
+}
+
+#settingsValue {
+    background: transparent;
+
+    color: #26364F;
+
+    font-size: 13px;
+}
+
 #opWarning {
     background-color: #FFF4EC;
 
@@ -2003,6 +2021,14 @@ QToolTip {
     color: #94A0B4;
 }
 
+#appRoot[theme="dark"] #settingsSectionTitle {
+    color: #F1F4FA;
+}
+
+#appRoot[theme="dark"] #settingsValue {
+    color: #D5DCEA;
+}
+
 #appRoot[theme="dark"] #opWarning {
     background-color: #3A2519;
 
@@ -2244,6 +2270,36 @@ QToolTip {
     color: #1D4ED8;
 }
 
+#opCheckBox {
+    background: transparent;
+
+    color: #3A4A63;
+
+    font-size: 12px;
+
+    spacing: 8px;
+}
+
+#opCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+
+    background-color: #FFFFFF;
+
+    border: 1px solid #B8C6DA;
+    border-radius: 5px;
+}
+
+#opCheckBox::indicator:hover {
+    border-color: #2563EB;
+}
+
+#opCheckBox::indicator:checked {
+    background-color: #2563EB;
+
+    border-color: #2563EB;
+}
+
 #editStripScroll,
 #editStripScroll QWidget#qt_scrollarea_viewport,
 #editStripContent {
@@ -2335,6 +2391,26 @@ QToolTip {
     border-color: #3B82F6;
 
     color: #93C5FD;
+}
+
+#appRoot[theme="dark"] #opCheckBox {
+    color: #B4BECC;
+}
+
+#appRoot[theme="dark"] #opCheckBox::indicator {
+    background-color: #171D2C;
+
+    border: 1px solid #3A4763;
+}
+
+#appRoot[theme="dark"] #opCheckBox::indicator:hover {
+    border-color: #3B82F6;
+}
+
+#appRoot[theme="dark"] #opCheckBox::indicator:checked {
+    background-color: #3B82F6;
+
+    border-color: #3B82F6;
 }
 
 #appRoot[theme="dark"] #pageScrollArea {

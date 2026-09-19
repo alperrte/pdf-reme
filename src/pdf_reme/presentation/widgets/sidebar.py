@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from pdf_reme.presentation.app_info import APP_VERSION
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.theme import get_theme_manager
 
@@ -598,7 +599,7 @@ class Sidebar(QFrame):
         self._footer.setText(
             self._language_manager.tr(
                 "sidebar.footer"
-            )
+            ).format(version=APP_VERSION)
         )
 
         self._refresh_theme_button()

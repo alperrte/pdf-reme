@@ -39,6 +39,32 @@ class PdfCompressionEngine:
         },
     }
 
+    # Hafif / Dengeli: hedef tasarrufa ulaşana dek sırayla denenen
+    # (ölçek, JPEG kalitesi) basamakları. Güçlü bu tabloyu kullanmaz.
+    LADDERS = {
+        "light": [
+            (1.00, 85),
+            (0.85, 78),
+        ],
+        "balanced": [
+            (0.75, 75),
+            (0.65, 65),
+            (0.55, 58),
+        ],
+    }
+
+    # Basamaklı seviyeler için görüntü uygunluk ölçütleri.
+    LADDER_LIMITS = {
+        "light": {
+            "min_pixels": 120_000,
+            "max_edge": 2600,
+        },
+        "balanced": {
+            "min_pixels": 40_000,
+            "max_edge": 2000,
+        },
+    }
+
     def compress(
         self,
         source_path: Path,
@@ -59,11 +85,18 @@ class PdfCompressionEngine:
             / f"{output_path.stem}_raster.pdf"
         )
 
-        self._run_structure_preserving_compression(
-            source_path=source_path,
-            output_path=preserve_candidate,
-            level=level,
-        )
+        if level in self.LADDERS:
+            self._run_laddered_compression(
+                source_path=source_path,
+                output_path=preserve_candidate,
+                level=level,
+            )
+        else:
+            self._run_structure_preserving_compression(
+                source_path=source_path,
+                output_path=preserve_candidate,
+                level=level,
+            )
 
         chosen_path = preserve_candidate
 
@@ -107,6 +140,205 @@ class PdfCompressionEngine:
             ):
                 if candidate.exists():
                     candidate.unlink()
+
+    def _run_laddered_compression(
+        self,
+        source_path: Path,
+        output_path: Path,
+        level: str,
+    ) -> None:
+        """Light / Balanced: basamakları hedefe ulaşana dek dener.
+
+        Her basamak kaynaktan yeniden başlar; hedef tasarrufa ulaşan ilk
+        çıktı seçilir, hiçbiri ulaşamazsa en küçük çıktı korunur.
+        """
+        target_savings = self.TARGET_SAVINGS[level]
+        limits = self.LADDER_LIMITS[level]
+
+        best_path = None
+        best_size = None
+        step_paths: list[Path] = []
+
+        try:
+            for index, (scale, quality) in enumerate(
+                self.LADDERS[level]
+            ):
+                step_path = (
+                    output_path.parent
+                    / f"{output_path.stem}_step{index}.pdf"
+                )
+
+                step_paths.append(step_path)
+
+                self._run_ladder_step(
+                    source_path=source_path,
+                    output_path=step_path,
+                    scale=scale,
+                    quality=quality,
+                    min_pixels=limits["min_pixels"],
+                    max_edge=limits["max_edge"],
+                    target_saved_bytes=int(
+                        source_path.stat().st_size * target_savings
+                    ),
+                )
+
+                step_size = step_path.stat().st_size
+
+                if best_size is None or step_size < best_size:
+                    best_size = step_size
+                    best_path = step_path
+
+                if (
+                    self._calculate_savings_fraction(
+                        source_path, step_path
+                    )
+                    >= target_savings
+                ):
+                    best_path = step_path
+                    break
+
+            if best_path is None:
+                raise RuntimeError(
+                    "Sıkıştırma için geçerli çıktı üretilemedi."
+                )
+
+            shutil.copy2(best_path, output_path)
+
+        finally:
+            for step_path in step_paths:
+                if step_path.exists():
+                    step_path.unlink()
+
+    def _run_ladder_step(
+        self,
+        source_path: Path,
+        output_path: Path,
+        scale: float,
+        quality: int,
+        min_pixels: int,
+        max_edge: int,
+        target_saved_bytes: int,
+    ) -> None:
+        intermediate_path = (
+            output_path.parent
+            / f"{output_path.stem}_image_stage.pdf"
+        )
+
+        estimated_saved_bytes = 0
+
+        try:
+            with pikepdf.open(source_path) as pdf:
+                image_objects = self._collect_ladder_images(
+                    pdf, min_pixels
+                )
+
+                for raw_size, raw_image in image_objects:
+                    if estimated_saved_bytes >= target_saved_bytes:
+                        break
+
+                    estimated_saved_bytes += (
+                        self._recompress_image_stream(
+                            raw_image=raw_image,
+                            original_raw_size=raw_size,
+                            scale=scale,
+                            quality=quality,
+                            max_edge=max_edge,
+                        )
+                    )
+
+                self._drop_page_thumbnails(pdf)
+
+                pdf.save(intermediate_path)
+
+            (
+                JobBuilder()
+                .input(str(intermediate_path))
+                .output(str(output_path))
+                .compress(
+                    compress_streams=True,
+                    object_streams="generate",
+                    recompress_flate=True,
+                    compression_level=9,
+                    decode_level="generalized",
+                )
+                .run()
+            )
+
+        finally:
+            if intermediate_path.exists():
+                intermediate_path.unlink()
+
+    def _collect_ladder_images(
+        self,
+        pdf,
+        min_pixels: int,
+    ) -> list:
+        """Yeniden kodlanabilir görüntüler, ham boyutuna göre büyükten küçüğe.
+
+        /SMask'li görüntüler dahildir (maske olduğu gibi kalır, boyutu
+        görüntüden bağımsız olabilir); /ImageMask, /Mask ve /Matte'li
+        maskeler atlanır.
+        """
+        image_objects = []
+        seen_objects = set()
+
+        for page in pdf.pages:
+            for raw_image in page.get_images().values():
+                objgen = tuple(raw_image.objgen)
+
+                if objgen != (0, 0):
+                    object_key = ("objgen", objgen)
+                else:
+                    object_key = ("direct", id(raw_image))
+
+                if object_key in seen_objects:
+                    continue
+
+                seen_objects.add(object_key)
+
+                try:
+                    if raw_image.get("/ImageMask", False):
+                        continue
+
+                    if "/Mask" in raw_image:
+                        continue
+
+                    if (
+                        "/SMask" in raw_image
+                        and "/Matte" in raw_image["/SMask"]
+                    ):
+                        continue
+
+                    raw_size = len(raw_image.read_raw_bytes())
+
+                    pdf_image = PdfImage(raw_image)
+
+                    if (
+                        pdf_image.width * pdf_image.height
+                        < min_pixels
+                    ):
+                        continue
+
+                    image_objects.append((raw_size, raw_image))
+
+                except Exception:
+                    continue
+
+        image_objects.sort(key=lambda item: item[0], reverse=True)
+
+        return image_objects
+
+    def _drop_page_thumbnails(self, pdf) -> None:
+        """Sayfa küçük resimlerini (/Thumb) ve kullanılmayan kaynakları at."""
+        try:
+            for page in pdf.pages:
+                if "/Thumb" in page.obj:
+                    del page.obj["/Thumb"]
+
+            pdf.remove_unreferenced_resources()
+
+        except Exception:
+            pass
 
     def _run_structure_preserving_compression(
         self,
@@ -270,6 +502,7 @@ class PdfCompressionEngine:
         original_raw_size: int,
         scale: float,
         quality: int,
+        max_edge: int | None = None,
     ) -> int:
         pil_image = None
         working_image = None
@@ -292,6 +525,13 @@ class PdfCompressionEngine:
             original_height = (
                 pil_image.height
             )
+
+            if max_edge:
+                scale = min(
+                    scale,
+                    max_edge
+                    / max(original_width, original_height),
+                )
 
             new_width = max(
                 1,

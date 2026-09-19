@@ -13,6 +13,7 @@ from uuid import uuid4
 
 from PIL import Image, ImageOps
 from pypdf import PdfReader
+from pypdf.errors import PyPdfError
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 
@@ -24,6 +25,10 @@ from pdf_reme.application.services.page_selection_parser import (
     PageSelectionParser,
 )
 from pdf_reme.application.services.trash_service import TrashService
+from pdf_reme.application.use_cases.compress_pdf import (
+    CompressPdfResult,
+    CompressPdfUseCase,
+)
 from pdf_reme.application.use_cases.convert_images_to_pdf import (
     ConvertImagesToPdfUseCase,
 )
@@ -33,10 +38,13 @@ from pdf_reme.application.use_cases.convert_office_to_pdf import (
 from pdf_reme.application.use_cases.convert_pdf_to_images import (
     ConvertPdfToImagesUseCase,
 )
+from pdf_reme.application.use_cases.decrypt_pdf import DecryptPdfUseCase
 from pdf_reme.application.use_cases.edit_pdf_pages import (
     EditPdfPagesUseCase,
 )
+from pdf_reme.application.use_cases.encrypt_pdf import EncryptPdfUseCase
 from pdf_reme.application.use_cases.merge_pdfs import MergePdfsUseCase
+from pdf_reme.application.use_cases.split_pdf import SplitPdfUseCase
 from pdf_reme.infrastructure.conversion.image_to_pdf_service import (
     ImageToPdfService,
 )
@@ -55,10 +63,17 @@ from pdf_reme.infrastructure.filesystem.file_hash import calculate_sha256
 from pdf_reme.infrastructure.filesystem.file_validation import (
     SUPPORTED_EXTENSIONS,
 )
+from pdf_reme.infrastructure.pdf.pdf_compression_service import (
+    PdfCompressionService,
+)
 from pdf_reme.infrastructure.pdf.pdf_merge_service import PdfMergeService
 from pdf_reme.infrastructure.pdf.pdf_page_edit_service import (
     PdfPageEditService,
 )
+from pdf_reme.infrastructure.pdf.pdf_security_service import (
+    PdfSecurityService,
+)
+from pdf_reme.infrastructure.pdf.pdf_split_service import PdfSplitService
 from pdf_reme.infrastructure.filesystem.trash_file_manager import (
     TrashFileManager,
 )
@@ -481,8 +496,36 @@ def _operation_error_from(error: Exception) -> OperationError:
     if isinstance(error, ValueError):
         lowered = message.lower()
 
+        # Şifreleme mesajları genel "şifreli" kontrolünden önce ayrışır.
+        if "zaten şifreli" in lowered:
+            return OperationError("already_encrypted", message)
+
+        if "şifreli değil" in lowered:
+            return OperationError("not_encrypted", message)
+
+        if "parolası yanlış" in lowered:
+            return OperationError("wrong_password", message)
+
+        if "parolası boş" in lowered or "parolası yalnızca" in lowered:
+            return OperationError("invalid_password", message)
+
         if "şifreli" in lowered:
             return OperationError("encrypted", message)
+
+        if "en az iki dosya" in lowered:
+            return OperationError("merge_needs_two", message)
+
+        if "parça sayısı" in lowered or "iki parçaya" in lowered:
+            return OperationError("invalid_parts", message)
+
+        if "sayfa" in lowered and (
+            "geçersiz" in lowered
+            or "seçil" in lowered
+            or "grup" in lowered
+            or "aşıyor" in lowered
+        ):
+            if "tüm sayfalar silinemez" not in lowered:
+                return OperationError("invalid_range", message)
 
         if "dosya adı" in lowered or "klasör yolu" in lowered:
             return OperationError("invalid_name", message)
@@ -491,6 +534,9 @@ def _operation_error_from(error: Exception) -> OperationError:
             return OperationError("all_pages_deleted", message)
 
         return OperationError("invalid_input", message)
+
+    if isinstance(error, PyPdfError):
+        return OperationError("corrupt_pdf", message)
 
     if isinstance(error, RuntimeError):
         return OperationError("conversion_failed", message)
@@ -982,3 +1028,322 @@ def save_edit_result(
 
     except Exception as error:
         raise _operation_error_from(error) from error
+
+
+# ----------------------------------------------------------------------
+# PDF Birleştir / Böl / Sıkıştır / Şifrele - Kilidi Aç
+# ----------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class PdfInfo:
+    """PDF hakkında hızlı bilgi; şifreli PDF'te sayfa sayısı bilinmez."""
+
+    page_count: int | None
+    size: int
+    encrypted: bool
+
+
+def inspect_pdf(path: str) -> PdfInfo:
+    """PDF'i şifreliyse de hata saymadan inceler (Şifreleme sayfası için)."""
+    try:
+        size = Path(path).stat().st_size
+        reader = PdfReader(str(path))
+
+        if reader.is_encrypted:
+            return PdfInfo(None, size, True)
+
+        return PdfInfo(len(reader.pages), size, False)
+
+    except FileNotFoundError as error:
+        raise OperationError("not_found", str(error)) from error
+
+    except Exception as error:
+        raise OperationError("corrupt_pdf", str(error)) from error
+
+
+def merge_pdfs(paths: list[str], name: str) -> Document:
+    if len(paths) < 2:
+        raise OperationError("merge_needs_two")
+
+    try:
+        with _scope() as session:
+            return MergePdfsUseCase(
+                SQLAlchemyDocumentRepository(session),
+                PdfMergeService(),
+                AppPaths(),
+            ).execute(list(paths), name)
+
+    except Exception as error:
+        raise _operation_error_from(error) from error
+
+
+@dataclass(frozen=True)
+class SplitRequest:
+    """PDF bölme isteği.
+
+    mode: "pages" (ifadedeki sayfalar bir PDF; `keep_rest` açıksa kalan
+    sayfalar ikinci bir PDF) | "parts" (eşit parçalar).
+    """
+
+    path: str
+    mode: str
+    name: str
+    expression: str = ""
+    part_count: int = 0
+    keep_rest: bool = True
+
+
+def _page_ranges_text(pages: list[int]) -> str:
+    """[1,2,3,5] -> '1-3, 5'"""
+    ranges: list[str] = []
+    ordered = sorted(set(pages))
+    index = 0
+
+    while index < len(ordered):
+        start = end = ordered[index]
+
+        while index + 1 < len(ordered) and ordered[index + 1] == end + 1:
+            index += 1
+            end = ordered[index]
+
+        ranges.append(str(start) if start == end else f"{start}-{end}")
+        index += 1
+
+    return ", ".join(ranges)
+
+
+def split_pdf(request: SplitRequest) -> list[Document]:
+    try:
+        total_pages = read_pdf_page_count(request.path)
+        selected: list[int] = []
+
+        if request.mode == "pages":
+            selected = parse_page_selection(request.expression, total_pages)
+
+        elif request.mode == "parts":
+            if not 2 <= request.part_count <= total_pages:
+                raise OperationError("invalid_parts")
+
+        else:
+            raise OperationError("invalid_input", request.mode)
+
+        with _scope() as session:
+            use_case = SplitPdfUseCase(
+                SQLAlchemyDocumentRepository(session),
+                PdfSplitService(),
+                PageSelectionParser(),
+                AppPaths(),
+            )
+
+            if request.mode == "parts":
+                return use_case.split_into_parts(
+                    request.path, request.part_count, request.name
+                )
+
+            chosen = set(selected)
+            rest = [
+                page
+                for page in range(1, total_pages + 1)
+                if page not in chosen
+            ]
+
+            if not (request.keep_rest and rest):
+                return [
+                    use_case.extract_selected_pages(
+                        request.path, request.expression, request.name
+                    )
+                ]
+
+            first = use_case.extract_selected_pages(
+                request.path,
+                _page_ranges_text(selected),
+                f"{request.name}_secili",
+            )
+
+            try:
+                second = use_case.extract_selected_pages(
+                    request.path,
+                    _page_ranges_text(rest),
+                    f"{request.name}_kalan",
+                )
+
+            except Exception:
+                # İkinci çıktı üretilemezse yarım iş bırakma.
+                use_case.repository.delete(first.id)
+                Path(first.stored_path).unlink(missing_ok=True)
+
+                raise
+
+            return [first, second]
+
+    except Exception as error:
+        raise _operation_error_from(error) from error
+
+
+def compress_pdf(
+    path: str,
+    name: str,
+    level: str,
+    report: ProgressReport | None = None,
+) -> CompressPdfResult:
+    progress = _Progress(report)
+    progress(0, "")
+
+    try:
+        with _scope() as session:
+            use_case = CompressPdfUseCase(
+                SQLAlchemyDocumentRepository(session),
+                PdfCompressionService(),
+                AppPaths(),
+            )
+
+            with _estimated_progress(
+                progress, 0, 95, Path(path).name, expected_seconds=15.0
+            ):
+                result = use_case.execute(path, name, level)
+
+    except Exception as error:
+        raise _operation_error_from(error) from error
+
+    progress(100, "")
+
+    return result
+
+
+def encrypt_pdf(
+    path: str,
+    name: str,
+    password: str,
+    owner_password: str = "",
+) -> Document:
+    try:
+        with _scope() as session:
+            return EncryptPdfUseCase(
+                SQLAlchemyDocumentRepository(session),
+                PdfSecurityService(),
+                AppPaths(),
+            ).execute(
+                path,
+                name,
+                password,
+                owner_password=owner_password or None,
+            )
+
+    except Exception as error:
+        raise _operation_error_from(error) from error
+
+
+def decrypt_pdf(path: str, name: str, password: str) -> Document:
+    try:
+        with _scope() as session:
+            return DecryptPdfUseCase(
+                SQLAlchemyDocumentRepository(session),
+                PdfSecurityService(),
+                AppPaths(),
+            ).execute(path, name, password)
+
+    except Exception as error:
+        raise _operation_error_from(error) from error
+
+
+# Ayarlar: depolama özeti ve bakım.
+@dataclass(frozen=True)
+class StorageSummary:
+    data_dir: str
+    logs_dir: str
+    library_bytes: int
+    library_files: int
+    trash_count: int
+    temp_bytes: int
+
+
+# Bu süreden yeni geçici girdiler (ör. açık bir düzenleme çalışma klasörü)
+# temizlemede korunur.
+_TEMP_MIN_AGE_SECONDS = 24 * 60 * 60
+
+
+def _directory_usage(directory: Path) -> tuple[int, int]:
+    """(toplam bayt, dosya sayısı); okunamayan girdiler yok sayılır."""
+    total = 0
+    count = 0
+
+    if not directory.exists():
+        return 0, 0
+
+    for entry in directory.rglob("*"):
+        try:
+            if entry.is_file():
+                total += entry.stat().st_size
+                count += 1
+
+        except OSError:
+            continue
+
+    return total, count
+
+
+def storage_summary() -> StorageSummary:
+    paths = AppPaths()
+
+    library_bytes, library_files = _directory_usage(paths.library_dir)
+    temp_bytes = sum(
+        _directory_usage(directory)[0]
+        for directory in (paths.temp_dir, paths.cache_dir)
+    )
+
+    return StorageSummary(
+        data_dir=str(paths.data_dir),
+        logs_dir=str(paths.logs_dir),
+        library_bytes=library_bytes,
+        library_files=library_files,
+        trash_count=len(fetch_trashed()),
+        temp_bytes=temp_bytes,
+    )
+
+
+def clear_temp_files(
+    min_age_seconds: float = _TEMP_MIN_AGE_SECONDS,
+) -> int:
+    """Geçici/önbellek klasörlerinde eski girdileri siler; boşalan bayt döner."""
+    paths = AppPaths()
+    now = time.time()
+    freed = 0
+
+    for directory in (paths.temp_dir, paths.cache_dir):
+        if not directory.exists():
+            continue
+
+        for entry in directory.iterdir():
+            try:
+                if now - entry.stat().st_mtime < min_age_seconds:
+                    continue
+
+                if entry.is_dir():
+                    size, _count = _directory_usage(entry)
+                    shutil.rmtree(entry, ignore_errors=True)
+
+                    if entry.exists():
+                        continue
+
+                else:
+                    size = entry.stat().st_size
+                    entry.unlink()
+
+                freed += size
+
+            except OSError:
+                continue
+
+    return freed
+
+
+def open_folder(path: str) -> None:
+    """Klasörü işletim sisteminin dosya yöneticisinde açar."""
+    folder = Path(path)
+
+    if not folder.is_dir():
+        raise OperationError("not_found", str(folder))
+
+    if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder))):
+        raise OperationError("reveal_failed", str(folder))
