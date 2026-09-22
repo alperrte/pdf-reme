@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFontDatabase, QIcon, QPixmap
 from PySide6.QtWidgets import QApplication
 
+from pdf_reme.infrastructure.database.init_db import init_database
 from pdf_reme.presentation.theme import get_theme_manager
 from pdf_reme.presentation.windows.main_window import MainWindow
 from pdf_reme.presentation.windows.splash_screen import SplashScreen
@@ -156,6 +157,10 @@ def main() -> int:
     app.setApplicationDisplayName(
         "PDF-REME"
     )
+
+    # Temiz kurulumda (ör. paketlenmiş exe) tablolar henüz yoktur; var olan
+    # veritabanına dokunmaz, yalnızca eksik tabloları oluşturur.
+    init_database()
 
     load_fonts()
 

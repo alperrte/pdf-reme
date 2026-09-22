@@ -105,6 +105,9 @@ assert str(data) in documents[0].stored_path
 
 # --- Office -> PDF (LibreOffice yerine sahte servis) ---
 class FakeOffice:
+    def __init__(self, runtime_path=None):
+        self.runtime_path = runtime_path
+
     def convert(self, input_path, output_path):
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)

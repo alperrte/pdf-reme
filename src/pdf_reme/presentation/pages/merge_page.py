@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from pdf_reme.presentation import backend_gateway
 from pdf_reme.presentation.pages.pdf_tool_page import PdfToolPage
+from pdf_reme.presentation.widgets.reorderable_list import ReorderableRowList
 
 
 class MergePage(PdfToolPage):
@@ -20,9 +21,6 @@ class MergePage(PdfToolPage):
     MULTIPLE = True
     ICON = "fa5s.object-group"
     ACCENT = "blue"
-
-    def _init_state(self) -> None:
-        self._row_widgets: list[QWidget] = []
 
     def _build_content(self) -> QWidget:
         page = QWidget()
@@ -72,15 +70,10 @@ class MergePage(PdfToolPage):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
 
-        holder = QWidget()
-        holder.setObjectName("dashboardContent")
+        self._file_list = ReorderableRowList()
+        self._file_list.reordered.connect(self._reorder_file)
 
-        self._rows_layout = QVBoxLayout(holder)
-        self._rows_layout.setContentsMargins(0, 0, 4, 0)
-        self._rows_layout.setSpacing(8)
-        self._rows_layout.addStretch(1)
-
-        scroll.setWidget(holder)
+        scroll.setWidget(self._file_list)
 
         card_layout.addWidget(scroll, 1)
 
@@ -125,24 +118,22 @@ class MergePage(PdfToolPage):
     def _refresh_content(self) -> None:
         tr = self._language_manager.tr
 
-        for widget in self._row_widgets:
-            self._rows_layout.removeWidget(widget)
-            widget.deleteLater()
-
-        self._row_widgets.clear()
-
         count = len(self._paths)
 
-        for index, path in enumerate(self._paths):
-            row = self._build_file_row(
-                path,
-                index=index,
-                count=count,
-                movable=True,
-            )
-
-            self._rows_layout.insertWidget(index, row)
-            self._row_widgets.append(row)
+        self._file_list.set_reorderable(
+            count > 1 and not self._runner.is_running
+        )
+        self._file_list.set_rows(
+            [
+                self._build_file_row(
+                    path,
+                    index=index,
+                    count=count,
+                    movable=True,
+                )
+                for index, path in enumerate(self._paths)
+            ]
+        )
 
         total_pages = sum(
             info.page_count or 0

@@ -1,11 +1,12 @@
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 
 import qtawesome as qta
 import shiboken6
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import QCoreApplication, QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtPdf import QPdfDocument
 from PySide6.QtWidgets import (
@@ -30,6 +31,7 @@ from pdf_reme.presentation.document_format import (
     format_document_meta,
     type_icon,
 )
+from pdf_reme.presentation.edit_page_map import PageMap, build_page_map
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.theme import get_theme_manager
 from pdf_reme.presentation.widgets.app_dialog import AppDialog, DialogItem
@@ -52,6 +54,18 @@ logger = logging.getLogger(__name__)
 _THUMBS_PER_TICK = 4
 _BUSY_DELAY_MS = 250
 _STRIP_WIDTH = THUMB_WIDTH + 34
+
+# `_start_step` odak parametresi: verilmezse seçilecek ilk sayfa kullanılır.
+_AUTO_FOCUS = -1
+
+
+@dataclass(frozen=True)
+class _StepRecord:
+    """Bir düzenleme adımının bağlam bilgisi (undo/redo'da geri yüklenir)."""
+
+    page_map: PageMap
+    selection_before: frozenset[int]
+    selection_after: frozenset[int]
 
 
 def _local_pdf_from_mime(mime_data) -> str | None:
@@ -94,6 +108,7 @@ class EditPage(QWidget):
         # states[0] kaynak, states[i] i. işlemden sonraki geçici PDF.
         self._states: list[str] = []
         self._ops: list[EditOperation] = []
+        self._records: list[_StepRecord] = []
         self._cursor = 0
 
         self._page_count = 0
@@ -111,7 +126,13 @@ class EditPage(QWidget):
         self._pending_notice = ""
         self._pending_focus: int | None = None
         self._pending_flash: tuple[int, ...] = ()
+        self._pending_record: _StepRecord | None = None
         self._busy_text = ""
+
+        # Yenileme sırasında (thumbnail'ler yeniden kurulurken) şeridin
+        # konumu, yerleşim tamamlanmadan bozulmasın diye bastırılır.
+        self._restoring = False
+        self._restore_generation = 0
 
         self._runner = TaskRunner(self)
         self._runner.succeeded.connect(self._on_job_succeeded)
@@ -320,6 +341,8 @@ class EditPage(QWidget):
 
         grid_holder = QWidget()
         grid_holder.setObjectName("editStripContent")
+
+        self._grid_holder = grid_holder
 
         holder_layout = QVBoxLayout(grid_holder)
         holder_layout.setContentsMargins(4, 4, 4, 4)
@@ -588,6 +611,7 @@ class EditPage(QWidget):
         self._source_path = path
         self._states = [path]
         self._ops = []
+        self._records = []
         self._cursor = 0
         self._selected = set()
 
@@ -618,6 +642,7 @@ class EditPage(QWidget):
         self._source_path = None
         self._states = []
         self._ops = []
+        self._records = []
         self._cursor = 0
         self._page_count = 0
         self._selected = set()
@@ -642,13 +667,20 @@ class EditPage(QWidget):
         keep_scroll: bool = True,
         focus: int | None = None,
         flash: tuple[int, ...] = (),
+        anchor: tuple[int, float] | None = None,
     ) -> None:
+        """Geçerli durumu yükler ve kullanıcının bağlamını geri getirir.
+
+        `anchor`: büyük görünümün (sayfa no, sayfa içi oran) konumu; verilmezse
+        piksel konumu korunur. `focus`: gizliyse görünür yapılacak sayfa.
+        """
         self._render_queue.clear()
         self._pdf_document.close()
 
         error = self._pdf_document.load(self._states[self._cursor])
 
         if error != QPdfDocument.Error.None_:
+            self._restoring = False
             self._page_count = 0
             self._grid.set_page_count(0)
             self._view.clear()
@@ -665,13 +697,21 @@ class EditPage(QWidget):
 
         strip_scroll = self._grid_scroll.verticalScrollBar().value()
 
+        # Thumbnail'ler yeniden yaratılırken yerleşim henüz yapılmadığından
+        # şerit konumu, yenileme bitene kadar (`_finish_restore`) bastırılır.
+        self._restoring = True
+        self._restore_generation += 1
+        generation = self._restore_generation
+
         self._grid.set_page_count(self._page_count)
         self._grid.set_selection(self._selected)
 
         self._grid_scroll.verticalScrollBar().setValue(strip_scroll)
 
         self._view.set_selection(self._selected)
-        self._view.set_document(self._pdf_document, keep_scroll=keep_scroll)
+        self._view.set_document(
+            self._pdf_document, keep_scroll=keep_scroll, anchor=anchor
+        )
 
         self._render_queue = list(range(self._page_count))
 
@@ -681,7 +721,6 @@ class EditPage(QWidget):
             focus = min(max(1, focus), max(1, self._page_count))
 
             self._view.scroll_to(focus, only_if_hidden=True)
-            self._ensure_strip_visible(focus)
 
         if flash:
             self._view.flash(
@@ -689,6 +728,35 @@ class EditPage(QWidget):
             )
 
         self._update_controls()
+
+        QTimer.singleShot(
+            0,
+            lambda: self._finish_restore(generation, strip_scroll, focus),
+        )
+
+    def _finish_restore(
+        self,
+        generation: int,
+        strip_scroll: int,
+        focus: int | None,
+    ) -> None:
+        """Yeni thumbnail'ler yerleştikten sonra şerit konumunu geri getirir."""
+        if generation != self._restore_generation or not shiboken6.isValid(
+            self
+        ):
+            return
+
+        self._restoring = False
+
+        self._grid.layout().activate()
+        self._grid_holder.layout().activate()
+
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.LayoutRequest)
+
+        self._grid_scroll.verticalScrollBar().setValue(strip_scroll)
+
+        if focus is not None:
+            self._ensure_strip_visible(focus)
 
     def _render_batch(self) -> None:
         for _ in range(_THUMBS_PER_TICK):
@@ -773,6 +841,9 @@ class EditPage(QWidget):
         self._update_page_indicator()
 
     def _ensure_strip_visible(self, page_number: int) -> None:
+        if self._restoring:
+            return
+
         thumbs = self._grid.thumbs
 
         if 1 <= page_number <= len(thumbs):
@@ -829,7 +900,7 @@ class EditPage(QWidget):
             notice=self._count_notice(
                 "rotate_right" if degrees > 0 else "rotate_left", pages
             ),
-            focus=pages[0],
+            focus=None,
             flash=tuple(pages),
         )
 
@@ -845,7 +916,6 @@ class EditPage(QWidget):
                 {"page_numbers": pages},
             ),
             notice=self._count_notice("delete", pages),
-            focus=pages[0],
         )
 
     def _duplicate(self) -> None:
@@ -863,7 +933,6 @@ class EditPage(QWidget):
                 {"page_numbers": pages},
             ),
             notice=self._count_notice("duplicate", pages),
-            focus=copies[0],
             flash=copies,
         )
 
@@ -878,7 +947,6 @@ class EditPage(QWidget):
             notice=self._language_manager.tr("edit.notice.blank").format(
                 page=after + 1
             ),
-            focus=after + 1,
             flash=(after + 1,),
         )
 
@@ -936,7 +1004,6 @@ class EditPage(QWidget):
                 },
             ),
             notice=notice,
-            focus=first,
             flash=added,
         )
 
@@ -1030,26 +1097,47 @@ class EditPage(QWidget):
             return
 
         operation = self._ops[self._cursor - 1]
+        record = self._records[self._cursor - 1]
+
+        anchor = self._mapped_view_position(record.page_map.backward)
 
         self._cursor -= 1
-        self._selected = set()
+        self._selected = set(record.selection_before)
         self._anchor = None
         self._notice = self._history_notice("undo", operation)
 
-        self._load_current_state()
+        self._load_current_state(
+            focus=min(self._selected) if self._selected else None,
+            anchor=anchor,
+        )
 
     def _on_redo(self) -> None:
         if self._runner.is_running or self._cursor >= len(self._ops):
             return
 
         operation = self._ops[self._cursor]
+        record = self._records[self._cursor]
+
+        anchor = self._mapped_view_position(record.page_map.forward)
 
         self._cursor += 1
-        self._selected = set()
+        self._selected = set(record.selection_after)
         self._anchor = None
         self._notice = self._history_notice("redo", operation)
 
-        self._load_current_state()
+        self._load_current_state(
+            focus=min(self._selected) if self._selected else None,
+            anchor=anchor,
+        )
+
+    def _mapped_view_position(self, convert) -> tuple[int, float] | None:
+        """Büyük görünümün konumunu, sayfa kimliğiyle yeni duruma eşler."""
+        if not self._page_count:
+            return None
+
+        page, fraction = self._view.scroll_position()
+
+        return convert(page), fraction
 
     def _history_notice(self, kind: str, operation: EditOperation) -> str:
         tr = self._language_manager.tr
@@ -1068,11 +1156,27 @@ class EditPage(QWidget):
         keep_selection: set[int] | None = None,
         *,
         notice: str = "",
-        focus: int | None = None,
+        focus: int | None = _AUTO_FOCUS,
         flash: tuple[int, ...] = (),
     ) -> None:
+        """İşlemi arka planda başlatır.
+
+        `keep_selection` verilmezse işleme uygun seçim hesaplanır (silmede
+        komşu sayfa, ekleme/çoğaltmada yeni sayfalar). `focus` verilmezse
+        seçilecek ilk sayfa, `None` ise hiçbir sayfa görünür yapılmaz.
+        """
         if self._workspace is None or self._runner.is_running:
             return
+
+        page_map = build_page_map(
+            operation.name, operation.args, self._page_count
+        )
+
+        if keep_selection is None:
+            keep_selection = self._selection_after(operation, page_map)
+
+        if focus == _AUTO_FOCUS:
+            focus = min(keep_selection) if keep_selection else None
 
         input_path = self._states[self._cursor]
         output_path = str(
@@ -1082,7 +1186,12 @@ class EditPage(QWidget):
         self._job = "step"
         self._pending_operation = operation
         self._pending_output = output_path
-        self._pending_selection = keep_selection or set()
+        self._pending_selection = set(keep_selection)
+        self._pending_record = _StepRecord(
+            page_map,
+            frozenset(self._selected),
+            frozenset(keep_selection),
+        )
         self._pending_notice = notice
         self._pending_focus = focus
         self._pending_flash = flash
@@ -1096,6 +1205,20 @@ class EditPage(QWidget):
         self._busy_text = self._language_manager.tr("edit.busy.step")
         self._busy_timer.start(_BUSY_DELAY_MS)
         self._update_controls()
+
+    def _selection_after(
+        self,
+        operation: EditOperation,
+        page_map: PageMap,
+    ) -> set[int]:
+        if operation.name == "delete_pages":
+            neighbour = page_map.neighbour_after_delete(
+                set(operation.args["page_numbers"])
+            )
+
+            return {neighbour} if neighbour else set()
+
+        return set(page_map.inserted)
 
     def _on_save_clicked(self) -> None:
         if self._cursor < 1 or self._runner.is_running:
@@ -1145,9 +1268,15 @@ class EditPage(QWidget):
 
         del self._states[self._cursor + 1:]
         del self._ops[self._cursor:]
+        del self._records[self._cursor:]
+
+        record = self._pending_record
+
+        anchor = self._mapped_view_position(record.page_map.forward)
 
         self._states.append(output_path)
         self._ops.append(self._pending_operation)
+        self._records.append(record)
         self._cursor += 1
 
         self._selected = self._pending_selection
@@ -1157,6 +1286,7 @@ class EditPage(QWidget):
         self._load_current_state(
             focus=self._pending_focus,
             flash=self._pending_flash,
+            anchor=anchor,
         )
 
     def _on_saved(self, document) -> None:

@@ -39,6 +39,10 @@ from pdf_reme.presentation.widgets.app_dialog import AppDialog, DialogItem
 from pdf_reme.presentation.widgets.busy_overlay import BusyOverlay
 from pdf_reme.presentation.widgets.file_drop_area import DropOverlay
 from pdf_reme.presentation.widgets.pdf_picker_dialog import PdfPickerDialog
+from pdf_reme.presentation.widgets.reorderable_list import (
+    ReorderableRowList,
+    move_item,
+)
 from pdf_reme.presentation.widgets.task_runner import TaskRunner
 
 logger = logging.getLogger(__name__)
@@ -269,15 +273,10 @@ class ConvertPage(QWidget):
         self._files_scroll.setWidgetResizable(True)
         self._files_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
 
-        files_content = QWidget()
-        files_content.setObjectName("dashboardContent")
+        self._file_list = ReorderableRowList()
+        self._file_list.reordered.connect(self._reorder_file)
 
-        self._files_layout = QVBoxLayout(files_content)
-        self._files_layout.setContentsMargins(0, 0, 4, 0)
-        self._files_layout.setSpacing(8)
-        self._files_layout.addStretch(1)
-
-        self._files_scroll.setWidget(files_content)
+        self._files_scroll.setWidget(self._file_list)
 
         layout.addWidget(self._files_scroll, 1)
 
@@ -684,20 +683,17 @@ class ConvertPage(QWidget):
                 self._pdf_page_count = count
 
     def _rebuild_file_rows(self, kind: str) -> None:
-        while self._files_layout.count() > 1:
-            item = self._files_layout.takeAt(0)
-            widget = item.widget()
-
-            if widget is not None:
-                widget.deleteLater()
-
         reorderable = kind == "images_to_pdf" and len(self._paths) > 1
 
-        for index, path in enumerate(self._paths):
-            self._files_layout.insertWidget(
-                index,
-                self._build_file_row(index, path, reorderable),
-            )
+        self._file_list.set_reorderable(
+            reorderable and not self._runner.is_running
+        )
+        self._file_list.set_rows(
+            [
+                self._build_file_row(index, path, reorderable)
+                for index, path in enumerate(self._paths)
+            ]
+        )
 
     def _build_file_row(
         self,
@@ -883,6 +879,14 @@ class ConvertPage(QWidget):
                 self._paths[index],
             )
             self._refresh()
+
+    def _reorder_file(self, source: int, slot: int) -> None:
+        """Sürükle-bırak: `_paths` okların kullandığı aynı listedir."""
+        if self._runner.is_running or self._kind() != "images_to_pdf":
+            return
+
+        self._paths[:] = move_item(self._paths, source, slot)
+        self._refresh()
 
     def _on_clear_clicked(self) -> None:
         if self._runner.is_running:

@@ -77,6 +77,7 @@ from pdf_reme.infrastructure.pdf.pdf_split_service import PdfSplitService
 from pdf_reme.infrastructure.filesystem.trash_file_manager import (
     TrashFileManager,
 )
+from pdf_reme.presentation.runtime_paths import bundled_libreoffice_dir
 from pdf_reme.shared.paths.app_paths import AppPaths
 
 
@@ -747,6 +748,12 @@ def _convert_images(
             shutil.rmtree(workspace, ignore_errors=True)
 
 
+def _office_service() -> OfficeToPdfService:
+    # Portable pakette `runtime/libreoffice` varsa o kullanılır; yoksa servis
+    # kurulu LibreOffice'i (standart konumlar, PATH) arar.
+    return OfficeToPdfService(runtime_path=bundled_libreoffice_dir())
+
+
 def _convert_office(
     request: ConvertRequest,
     repository: SQLAlchemyDocumentRepository,
@@ -766,7 +773,7 @@ def _convert_office(
 
     if not combine:
         use_case = ConvertOfficeToPdfUseCase(
-            repository, OfficeToPdfService(), paths
+            repository, _office_service(), paths
         )
 
         documents: list[Document] = []
@@ -791,7 +798,7 @@ def _convert_office(
     workspace = _new_convert_workspace()
 
     try:
-        service = OfficeToPdfService()
+        service = _office_service()
         temp_pdfs: list[Path] = []
 
         for index, source in enumerate(sources):

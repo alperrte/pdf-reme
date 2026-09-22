@@ -168,7 +168,10 @@ class PageScrollView(QScrollArea):
         document: QPdfDocument | None,
         *,
         keep_scroll: bool = False,
+        anchor: tuple[int, float] | None = None,
     ) -> None:
+        """`anchor` = (sayfa no, sayfa içi oran); verilirse konum piksel
+        yerine sayfa kimliğiyle (`scroll_position` çıktısı) geri yüklenir."""
         previous_scroll = self.verticalScrollBar().value()
 
         self._document = document
@@ -195,15 +198,24 @@ class PageScrollView(QScrollArea):
 
         self._relayout()
 
-        self.verticalScrollBar().setValue(
-            previous_scroll if keep_scroll else 0
-        )
+        if anchor is not None:
+            self._restore_anchor((max(0, anchor[0] - 1), anchor[1]))
+        else:
+            self.verticalScrollBar().setValue(
+                previous_scroll if keep_scroll else 0
+            )
 
-        if not keep_scroll:
-            self._current = 0
+            if not keep_scroll:
+                self._current = 0
 
         self._update_current()
         self._schedule_render()
+
+    def scroll_position(self) -> tuple[int, float]:
+        """Görünümün üst kenarındaki sayfa (1 tabanlı) + sayfa içi oran."""
+        index, fraction = self._anchor()
+
+        return index + 1, fraction
 
     def clear(self) -> None:
         self.set_document(None)

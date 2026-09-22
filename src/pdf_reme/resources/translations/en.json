@@ -317,7 +317,7 @@
     "merge.error_title": "Couldn't merge",
     "merge.summary": "{count} files  •  {pages} pages",
     "merge.need_two": "At least two PDFs are needed to merge.",
-    "merge.order_hint": "Files are merged from top to bottom in this order; use the arrow buttons to reorder.",
+    "merge.order_hint": "Files are merged from top to bottom in this order; drag the rows or use the arrow buttons to reorder.",
     "merge.output_name": "Output name",
     "merge.action": "Merge",
     "merge.busy": "Merging PDFs…",

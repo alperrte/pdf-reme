@@ -30,6 +30,7 @@ from pdf_reme.presentation.widgets.app_dialog import AppDialog, DialogItem
 from pdf_reme.presentation.widgets.busy_overlay import BusyOverlay
 from pdf_reme.presentation.widgets.file_drop_area import DropOverlay
 from pdf_reme.presentation.widgets.pdf_picker_dialog import PdfPickerDialog
+from pdf_reme.presentation.widgets.reorderable_list import move_item
 from pdf_reme.presentation.widgets.task_runner import TaskRunner
 
 logger = logging.getLogger(__name__)
@@ -588,6 +589,14 @@ class PdfToolPage(QWidget):
                 self._paths[index],
             )
             self._refresh()
+
+    def _reorder_file(self, source: int, slot: int) -> None:
+        """Sürükle-bırak: `_paths` okların kullandığı aynı listedir."""
+        if self._runner.is_running:
+            return
+
+        self._paths[:] = move_item(self._paths, source, slot)
+        self._refresh()
 
     def clear_files(self) -> None:
         self._paths.clear()

@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from pypdf import PdfReader
@@ -93,9 +94,13 @@ class OfficeToPdfService:
                         str(staged_source),
                     ],
                     capture_output=True,
+                    stdin=subprocess.DEVNULL,
                     text=True,
                     timeout=self.timeout_seconds,
                     check=False,
+                    # Pencereli (windowed) uygulamada konsol penceresi
+                    # açılmasın.
+                    creationflags=self._creation_flags(),
                 )
 
             except subprocess.TimeoutExpired as exc:
@@ -286,6 +291,13 @@ class OfficeToPdfService:
                 "Çıktı dosyası kaynak dosya "
                 "ile aynı olamaz."
             )
+
+    @staticmethod
+    def _creation_flags() -> int:
+        if sys.platform == "win32":
+            return subprocess.CREATE_NO_WINDOW
+
+        return 0
 
     @staticmethod
     def _is_windows() -> bool:
