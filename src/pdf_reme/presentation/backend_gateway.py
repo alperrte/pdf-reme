@@ -76,6 +76,7 @@ from pdf_reme.infrastructure.pdf.pdf_security_service import (
 from pdf_reme.infrastructure.pdf.pdf_split_service import PdfSplitService
 from pdf_reme.infrastructure.filesystem.trash_file_manager import (
     TrashFileManager,
+    TrashIOError,
 )
 from pdf_reme.presentation.runtime_paths import bundled_libreoffice_dir
 from pdf_reme.shared.paths.app_paths import AppPaths
@@ -139,6 +140,25 @@ def fetch_library_documents() -> list[Document]:
         )
 
         return _sort_by_created_at_desc(documents)
+
+
+def find_active_document_by_path(path: str) -> Document | None:
+    """`path`'in kütüphanedeki (aktif) karşılığını bulur; yoksa `None`.
+
+    Şifreleme sonrası temizlikte (bkz. `encrypt_pdf`), kaynağın kütüphane
+    kopyasını çöpe taşıyabilmek için orijinal dosya yoluna göre eşleşen
+    belgeyi bulmak gerekir.
+    """
+    target = Path(path).resolve()
+
+    for document in fetch_library_documents():
+        try:
+            if Path(document.stored_path).resolve() == target:
+                return document
+        except OSError:
+            continue
+
+    return None
 
 
 # Favori sırası: Document modelinde "favoriye eklenme zamanı" alanı yok
@@ -271,28 +291,40 @@ def mark_as_opened(
 def move_to_trash(
     document_id: str,
 ) -> Document:
-    with _scope() as session:
-        return _trash_service(session).move_to_trash(
-            document_id
-        )
+    try:
+        with _scope() as session:
+            return _trash_service(session).move_to_trash(
+                document_id
+            )
+
+    except Exception as error:
+        raise _operation_error_from(error) from error
 
 
 def restore_from_trash(
     document_id: str,
 ) -> Document:
-    with _scope() as session:
-        return _trash_service(session).restore(
-            document_id
-        )
+    try:
+        with _scope() as session:
+            return _trash_service(session).restore(
+                document_id
+            )
+
+    except Exception as error:
+        raise _operation_error_from(error) from error
 
 
 def permanently_delete(
     document_id: str,
 ) -> None:
-    with _scope() as session:
-        _trash_service(session).permanently_delete(
-            document_id
-        )
+    try:
+        with _scope() as session:
+            _trash_service(session).permanently_delete(
+                document_id
+            )
+
+    except Exception as error:
+        raise _operation_error_from(error) from error
 
 
 def clear_trash() -> int:
@@ -315,6 +347,7 @@ class ImportOutcome:
 _ERROR_REASONS = {
     "Dosya bulunamadı.": "not_found",
     "Desteklenmeyen dosya türü.": "unsupported",
+    "Şifreli PDF.": "encrypted",
 }
 
 _CORRUPT_REASONS = {
@@ -381,9 +414,16 @@ def _find_existing(path: Path) -> tuple[str | None, bool]:
 
 def import_documents(
     source_paths: list[str],
+    *,
+    passwords: dict[str, str] | None = None,
 ) -> list[ImportOutcome]:
+    """`passwords`, önceden (örn. bir parola diyaloğuyla) doğrulanmış
+    `{kaynak_yol: parola}` eşlemesidir; şifreli PDF'ler için kullanılır ve
+    hiçbir yere yazılmaz, yalnızca bu çağrı süresince bellekte tutulur."""
+
     service = ImportDocumentService(AppPaths())
     outcomes: list[ImportOutcome] = []
+    passwords = passwords or {}
 
     for raw_path in source_paths:
         path = Path(raw_path)
@@ -395,7 +435,9 @@ def import_documents(
             continue
 
         try:
-            result = service.import_document(path)
+            result = service.import_document(
+                path, password=passwords.get(raw_path)
+            )
 
         except Exception:
             outcomes.append(ImportOutcome(raw_path, "failed", "save_failed"))
@@ -538,6 +580,9 @@ def _operation_error_from(error: Exception) -> OperationError:
 
     if isinstance(error, PyPdfError):
         return OperationError("corrupt_pdf", message)
+
+    if isinstance(error, TrashIOError):
+        return OperationError("trash_io_failed", message)
 
     if isinstance(error, RuntimeError):
         return OperationError("conversion_failed", message)

@@ -45,6 +45,50 @@ def test_valid_pdf_is_accepted(tmp_path):
     assert result.error is None
 
 
+def _make_encrypted_pdf(path, password="gizli-123"):
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=280)
+    writer.encrypt(user_password=password, owner_password=password)
+
+    with path.open("wb") as file:
+        writer.write(file)
+
+
+def test_encrypted_pdf_without_password_is_rejected_as_encrypted(tmp_path):
+    pdf_path = tmp_path / "encrypted.pdf"
+    _make_encrypted_pdf(pdf_path)
+
+    result = validate_file(pdf_path)
+
+    assert result.is_valid is False
+    assert result.document_type == "pdf"
+    assert result.error == "Şifreli PDF."
+
+
+def test_encrypted_pdf_with_correct_password_is_accepted(tmp_path):
+    pdf_path = tmp_path / "encrypted.pdf"
+    _make_encrypted_pdf(pdf_path, password="gizli-123")
+
+    result = validate_file(pdf_path, password="gizli-123")
+
+    assert result.is_valid is True
+    assert result.document_type == "pdf"
+    assert result.error is None
+
+
+def test_encrypted_pdf_with_wrong_password_is_rejected(tmp_path):
+    pdf_path = tmp_path / "encrypted.pdf"
+    _make_encrypted_pdf(pdf_path, password="gizli-123")
+
+    result = validate_file(pdf_path, password="yanlis-parola")
+
+    assert result.is_valid is False
+    assert result.document_type == "pdf"
+    # Yanlış parola, dosya bozukmuş gibi genel "bozuk" dalına düşer -- gerçek
+    # kullanıcı akışında yanlış parola zaten diyalog aşamasında ayıklanır.
+    assert result.error is not None
+
+
 def test_corrupted_pdf_is_rejected(tmp_path):
     pdf_path = tmp_path / "corrupted.pdf"
     pdf_path.write_bytes(b"this is not a real pdf")

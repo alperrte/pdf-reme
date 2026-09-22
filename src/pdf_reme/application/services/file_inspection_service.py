@@ -33,8 +33,13 @@ class FileInspectionService:
     ) -> None:
         self.duplicate_detection_service = duplicate_detection_service
 
-    def inspect(self, file_path: str | Path) -> FileInspectionResult:
-        validation = validate_file(file_path)
+    def inspect(
+        self,
+        file_path: str | Path,
+        *,
+        password: str | None = None,
+    ) -> FileInspectionResult:
+        validation = validate_file(file_path, password=password)
 
         if not validation.is_valid:
             return FileInspectionResult(

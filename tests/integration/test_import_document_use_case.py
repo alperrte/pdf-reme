@@ -106,6 +106,84 @@ def test_valid_pdf_is_imported_and_saved_to_database(
     engine.dispose()
 
 
+def create_encrypted_pdf(path, password="gizli-123"):
+    writer = PdfWriter()
+    writer.add_blank_page(width=595, height=842)
+    writer.encrypt(user_password=password, owner_password=password)
+
+    with path.open("wb") as file:
+        writer.write(file)
+
+
+def test_encrypted_pdf_without_password_is_rejected(
+    tmp_path,
+    monkeypatch,
+):
+    engine, session, repository, paths, use_case = (
+        create_test_environment(tmp_path, monkeypatch)
+    )
+
+    source = tmp_path / "locked.pdf"
+    create_encrypted_pdf(source)
+
+    result = use_case.execute(source)
+
+    assert result.imported is False
+    assert result.document is None
+    assert result.error == "Şifreli PDF."
+    assert list(paths.imported_pdf_dir.iterdir()) == []
+
+    session.close()
+    engine.dispose()
+
+
+def test_encrypted_pdf_with_correct_password_is_imported(
+    tmp_path,
+    monkeypatch,
+):
+    engine, session, repository, paths, use_case = (
+        create_test_environment(tmp_path, monkeypatch)
+    )
+
+    source = tmp_path / "locked.pdf"
+    create_encrypted_pdf(source, password="gizli-123")
+
+    result = use_case.execute(source, password="gizli-123")
+
+    assert result.imported is True
+    assert result.document is not None
+
+    stored_path = paths.imported_pdf_dir / "locked.pdf"
+
+    assert stored_path.exists()
+    # Orijinal şifreli bayt-bayt kopyalanır; şifresiz bir kopya asla yazılmaz.
+    assert stored_path.read_bytes() == source.read_bytes()
+
+    session.close()
+    engine.dispose()
+
+
+def test_encrypted_pdf_with_wrong_password_is_rejected(
+    tmp_path,
+    monkeypatch,
+):
+    engine, session, repository, paths, use_case = (
+        create_test_environment(tmp_path, monkeypatch)
+    )
+
+    source = tmp_path / "locked.pdf"
+    create_encrypted_pdf(source, password="gizli-123")
+
+    result = use_case.execute(source, password="yanlis-parola")
+
+    assert result.imported is False
+    assert result.document is None
+    assert list(paths.imported_pdf_dir.iterdir()) == []
+
+    session.close()
+    engine.dispose()
+
+
 def test_duplicate_pdf_is_not_imported_again(
     tmp_path,
     monkeypatch,

@@ -31,7 +31,14 @@ from pdf_reme.presentation.document_format import (
     format_document_meta,
     type_icon,
 )
-from pdf_reme.presentation.edit_page_map import PageMap, build_page_map
+from pdf_reme.presentation.edit_page_labels import identity_label
+from pdf_reme.presentation.edit_page_map import (
+    PageIdentity,
+    PageMap,
+    apply_identity_step,
+    build_page_map,
+    initial_identities,
+)
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.theme import get_theme_manager
 from pdf_reme.presentation.widgets.app_dialog import AppDialog, DialogItem
@@ -39,6 +46,7 @@ from pdf_reme.presentation.widgets.busy_overlay import BusyOverlay
 from pdf_reme.presentation.widgets.file_drop_area import DropOverlay
 from pdf_reme.presentation.widgets.page_scroll_view import PageScrollView
 from pdf_reme.presentation.widgets.page_thumbnail_grid import (
+    THUMB_HEIGHT,
     THUMB_WIDTH,
     PageThumbnailGrid,
     render_page_thumbnail,
@@ -54,6 +62,9 @@ logger = logging.getLogger(__name__)
 _THUMBS_PER_TICK = 4
 _BUSY_DELAY_MS = 250
 _STRIP_WIDTH = THUMB_WIDTH + 34
+# `_finish_restore`'un şeridin gerçek yüksekliğinin beklenen değere
+# ulaşmasını bekleme deneme sınırı (bkz. `_finish_restore`).
+_MAX_RESTORE_ATTEMPTS = 6
 
 # `_start_step` odak parametresi: verilmezse seçilecek ilk sayfa kullanılır.
 _AUTO_FOCUS = -1
@@ -66,6 +77,8 @@ class _StepRecord:
     page_map: PageMap
     selection_before: frozenset[int]
     selection_after: frozenset[int]
+    identities_before: tuple[PageIdentity, ...]
+    identities_after: tuple[PageIdentity, ...]
 
 
 def _local_pdf_from_mime(mime_data) -> str | None:
@@ -115,6 +128,7 @@ class EditPage(QWidget):
         self._selected: set[int] = set()
         self._anchor: int | None = None
         self._notice = ""
+        self._page_identities: tuple[PageIdentity, ...] = ()
 
         self._pdf_document = QPdfDocument(self)
         self._render_queue: list[int] = []
@@ -599,7 +613,7 @@ class EditPage(QWidget):
         tr = self._language_manager.tr
 
         try:
-            backend_gateway.read_pdf_page_count(path)
+            page_count = backend_gateway.read_pdf_page_count(path)
 
         except OperationError as error:
             self._show_error(error.reason)
@@ -614,6 +628,7 @@ class EditPage(QWidget):
         self._records = []
         self._cursor = 0
         self._selected = set()
+        self._page_identities = initial_identities(page_count)
 
         self._name_input.setText(f"{Path(path).stem}{tr('edit.name_suffix')}")
 
@@ -648,6 +663,7 @@ class EditPage(QWidget):
         self._selected = set()
         self._anchor = None
         self._notice = ""
+        self._page_identities = ()
 
         self._grid.set_page_count(0)
         self._stack.setCurrentIndex(0)
@@ -706,6 +722,10 @@ class EditPage(QWidget):
         self._grid.set_page_count(self._page_count)
         self._grid.set_selection(self._selected)
 
+        labels = self._identity_labels()
+        self._grid.set_identities(labels)
+        self._view.set_identities(labels)
+
         self._grid_scroll.verticalScrollBar().setValue(strip_scroll)
 
         self._view.set_selection(self._selected)
@@ -739,19 +759,41 @@ class EditPage(QWidget):
         generation: int,
         strip_scroll: int,
         focus: int | None,
+        attempt: int = 0,
     ) -> None:
-        """Yeni thumbnail'ler yerleştikten sonra şerit konumunu geri getirir."""
+        """Yeni thumbnail'ler yerleştikten sonra şerit konumunu geri getirir.
+
+        Sayfa SAYISI değişen işlemlerde (sil/kopyala/boş-sayfa-ekle) şeridin
+        gerçek içerik yüksekliği ve dolayısıyla kaydırma çubuğunun aralığı,
+        `QGridLayout`'un yeniden yerleşimi tamamlanana kadar güncel olmayabilir
+        — bu yüzden sabit tek seferlik bir gecikme yerine, gerçek yükseklik
+        beklenen değere ulaşana kadar (üst sınırlı) yeniden denenir. Sayfa
+        sayısı değişmeyen işlemlerde (döndür/sırala) beklenen yükseklik zaten
+        ilk denemede karşılanır, bu yüzden onlarda gözle görülür bir gecikme
+        olmaz.
+        """
         if generation != self._restore_generation or not shiboken6.isValid(
             self
         ):
             return
 
-        self._restoring = False
-
         self._grid.layout().activate()
         self._grid_holder.layout().activate()
 
         QCoreApplication.sendPostedEvents(None, QEvent.Type.LayoutRequest)
+
+        ready = self._grid.height() >= self._grid.expected_height()
+
+        if not ready and attempt < _MAX_RESTORE_ATTEMPTS:
+            QTimer.singleShot(
+                0,
+                lambda: self._finish_restore(
+                    generation, strip_scroll, focus, attempt + 1
+                ),
+            )
+            return
+
+        self._restoring = False
 
         self._grid_scroll.verticalScrollBar().setValue(strip_scroll)
 
@@ -846,10 +888,36 @@ class EditPage(QWidget):
 
         thumbs = self._grid.thumbs
 
-        if 1 <= page_number <= len(thumbs):
+        if not 1 <= page_number <= len(thumbs):
+            return
+
+        offset = self._grid.expected_offset(page_number - 1)
+
+        if offset is None:
             self._grid_scroll.ensureWidgetVisible(
                 thumbs[page_number - 1], 0, 24
             )
+            return
+
+        # `ensureWidgetVisible`, hedef widget'ın GERÇEK `geometry()`'sine
+        # bakar; şerit az önce yeniden kurulduysa bu değer henüz Qt tarafından
+        # hesaplanmamış olabilir (bkz. `_finish_restore`). Konumu, layout'un
+        # kendi zamanlamasına bağlı kalmadan burada analitik hesaplıyoruz.
+        holder_margin_top = (
+            self._grid_holder.layout().contentsMargins().top()
+        )
+        top = offset + holder_margin_top
+        bottom = top + THUMB_HEIGHT
+        margin = 24
+
+        scrollbar = self._grid_scroll.verticalScrollBar()
+        viewport_height = self._grid_scroll.viewport().height()
+        value = scrollbar.value()
+
+        if top - margin < value:
+            scrollbar.setValue(max(0, top - margin))
+        elif bottom + margin > value + viewport_height:
+            scrollbar.setValue(bottom + margin - viewport_height)
 
     def _update_page_indicator(self) -> None:
         tr = self._language_manager.tr
@@ -870,6 +938,16 @@ class EditPage(QWidget):
 
     def _selected_pages(self) -> list[int]:
         return sorted(self._selected)
+
+    def _identity_labels(self) -> list[str]:
+        tr = self._language_manager.tr
+
+        return [
+            identity_label(identity, position, tr)
+            for position, identity in enumerate(
+                self._page_identities, start=1
+            )
+        ]
 
     def _insertion_point(self) -> int:
         return max(self._selected) if self._selected else self._page_count
@@ -1105,6 +1183,7 @@ class EditPage(QWidget):
         self._selected = set(record.selection_before)
         self._anchor = None
         self._notice = self._history_notice("undo", operation)
+        self._page_identities = record.identities_before
 
         self._load_current_state(
             focus=min(self._selected) if self._selected else None,
@@ -1124,6 +1203,7 @@ class EditPage(QWidget):
         self._selected = set(record.selection_after)
         self._anchor = None
         self._notice = self._history_notice("redo", operation)
+        self._page_identities = record.identities_after
 
         self._load_current_state(
             focus=min(self._selected) if self._selected else None,
@@ -1171,6 +1251,9 @@ class EditPage(QWidget):
         page_map = build_page_map(
             operation.name, operation.args, self._page_count
         )
+        identities_after = apply_identity_step(
+            self._page_identities, operation.name, operation.args
+        )
 
         if keep_selection is None:
             keep_selection = self._selection_after(operation, page_map)
@@ -1191,6 +1274,8 @@ class EditPage(QWidget):
             page_map,
             frozenset(self._selected),
             frozenset(keep_selection),
+            self._page_identities,
+            identities_after,
         )
         self._pending_notice = notice
         self._pending_focus = focus
@@ -1282,6 +1367,7 @@ class EditPage(QWidget):
         self._selected = self._pending_selection
         self._anchor = None
         self._notice = self._pending_notice
+        self._page_identities = record.identities_after
 
         self._load_current_state(
             focus=self._pending_focus,

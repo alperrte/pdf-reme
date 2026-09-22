@@ -24,6 +24,8 @@ class ImportDocumentService:
     def import_document(
         self,
         source_path: str | Path,
+        *,
+        password: str | None = None,
     ) -> ImportDocumentResult:
         with session_scope() as session:
             repository = SQLAlchemyDocumentRepository(session)
@@ -42,4 +44,4 @@ class ImportDocumentService:
                 paths=self.paths,
             )
 
-            return use_case.execute(source_path)
+            return use_case.execute(source_path, password=password)

@@ -1902,6 +1902,15 @@ QToolTip {
     font-size: 11px;
 }
 
+#editThumbIdentity {
+    background: transparent;
+
+    color: #9AA6B7;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 9px;
+}
+
 #pickerList {
     background: transparent;
 
@@ -2159,6 +2168,10 @@ QToolTip {
     color: #9AA6B7;
 }
 
+#appRoot[theme="dark"] #editThumbIdentity {
+    color: #6B7A90;
+}
+
 #appRoot[theme="dark"] #pickerList::item {
     background-color: #1A2030;
 
@@ -2343,6 +2356,15 @@ QToolTip {
     font-size: 11px;
 }
 
+#pageViewIdentity {
+    background: transparent;
+
+    color: #9AA6B7;
+
+    font-family: "Plus Jakarta Sans Medium";
+    font-size: 9px;
+}
+
 #editPageIndicator {
     background: transparent;
 
@@ -2433,6 +2455,10 @@ QToolTip {
 
 #appRoot[theme="dark"] #pageViewNumber {
     color: #9AA6B7;
+}
+
+#appRoot[theme="dark"] #pageViewIdentity {
+    color: #6B7A90;
 }
 
 #appRoot[theme="dark"] #editPageIndicator {

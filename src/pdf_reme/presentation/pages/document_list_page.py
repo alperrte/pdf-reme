@@ -483,8 +483,25 @@ class DocumentListPage(QWidget):
         if not self._confirm_move_to_trash([document]):
             return
 
-        backend_gateway.move_to_trash(document_id)
+        try:
+            backend_gateway.move_to_trash(document_id)
+
+        except backend_gateway.OperationError as error:
+            self.refresh()
+            self._show_action_error(error)
+            return
+
         self.refresh()
+
+    def _show_action_error(self, error: "backend_gateway.OperationError") -> None:
+        language_manager = self._language_manager
+
+        AppDialog.inform(
+            self.window(),
+            title=language_manager.tr("trash.action_failed_title"),
+            body=language_manager.tr(f"op.error.{error.reason}"),
+            variant="danger",
+        )
 
     def _on_restore_requested(self, document_id: str) -> None:
         """Yalnızca çöp kutusu sayfasında anlamlı."""
@@ -543,7 +560,38 @@ class DocumentListPage(QWidget):
         if not self._confirm_move_to_trash(documents):
             return False
 
+        failed = 0
+
         for document in documents:
-            backend_gateway.move_to_trash(document.id)
+            try:
+                backend_gateway.move_to_trash(document.id)
+
+            except backend_gateway.OperationError:
+                failed += 1
+
+        if failed:
+            self._show_bulk_action_error(
+                "trash.move_bulk_failed_body",
+                failed=failed,
+                total=len(documents),
+            )
 
         return True
+
+    def _show_bulk_action_error(
+        self,
+        body_key: str,
+        *,
+        failed: int,
+        total: int,
+    ) -> None:
+        language_manager = self._language_manager
+
+        AppDialog.inform(
+            self.window(),
+            title=language_manager.tr("trash.action_failed_title"),
+            body=language_manager.tr(body_key).format(
+                failed=failed, total=total
+            ),
+            variant="danger",
+        )

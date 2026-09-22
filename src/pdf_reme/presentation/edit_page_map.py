@@ -165,3 +165,100 @@ def build_page_map(
         )
 
     return PageMap(page_count, page_count, identity)
+
+
+@dataclass(frozen=True)
+class PageIdentity:
+    """Bir sayfanın kalıcı kimliği; pozisyonu (sayfa no) değişse de kalır.
+
+    `kind`:
+      - "original": kaynak dosyanın ilk açıldığı andaki bir sayfası.
+      - "blank": sonradan eklenen boş sayfa.
+      - "inserted": başka bir PDF'ten eklenen sayfa.
+      - "duplicate": mevcut bir sayfanın kopyası.
+
+    `original_page`: yalnız `kind == "original"` için, kaynak dosyadaki 1
+    tabanlı sayfa numarası.
+    `source_pdf_page`: yalnız `kind == "inserted"` için, eklenen PDF'teki 1
+    tabanlı sayfa numarası.
+    `source_display_page`: yalnız `kind == "duplicate"` için, kopyalandığı
+    anda ekranda görünen en yakın kaynağın sayfa numarası (zincir kısa
+    tutulur; kopyanın kopyası alınırsa köke değil bir önceki kopyaya işaret
+    eder).
+    """
+
+    kind: str
+    original_page: int | None = None
+    source_pdf_page: int | None = None
+    source_display_page: int | None = None
+
+
+def initial_identities(page_count: int) -> tuple[PageIdentity, ...]:
+    """Kaynak dosya ilk açıldığında her sayfa kendi orijinal kimliğini taşır."""
+    return tuple(
+        PageIdentity("original", original_page=page)
+        for page in range(1, page_count + 1)
+    )
+
+
+def apply_identity_step(
+    identities: tuple[PageIdentity, ...],
+    operation_name: str,
+    args: dict,
+) -> tuple[PageIdentity, ...]:
+    """`build_page_map` ile aynı dallanma sırasını izleyerek kimlikleri taşır."""
+    if operation_name == "rotate_pages":
+        return identities
+
+    if operation_name == "delete_pages":
+        deleted = set(args["page_numbers"])
+
+        return tuple(
+            identity
+            for page, identity in enumerate(identities, start=1)
+            if page not in deleted
+        )
+
+    if operation_name == "duplicate_pages":
+        duplicated = set(args["page_numbers"])
+
+        result: list[PageIdentity] = []
+
+        for page, identity in enumerate(identities, start=1):
+            result.append(identity)
+
+            if page in duplicated:
+                result.append(
+                    PageIdentity("duplicate", source_display_page=page)
+                )
+
+        return tuple(result)
+
+    if operation_name == "insert_blank_page":
+        after = args["after_page"]
+
+        result = list(identities[:after])
+        result.append(PageIdentity("blank"))
+        result.extend(identities[after:])
+
+        return tuple(result)
+
+    if operation_name == "insert_pages":
+        after = args["after_page"]
+        source_pages = sorted(set(args["source_page_numbers"]))
+
+        result = list(identities[:after])
+        result.extend(
+            PageIdentity("inserted", source_pdf_page=source_page)
+            for source_page in source_pages
+        )
+        result.extend(identities[after:])
+
+        return tuple(result)
+
+    if operation_name == "reorder_pages":
+        order = list(args["page_order"])
+
+        return tuple(identities[page - 1] for page in order)
+
+    return identities

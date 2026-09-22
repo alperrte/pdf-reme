@@ -1,8 +1,24 @@
+import os
 import shutil
+import time
 from pathlib import Path
 from uuid import uuid4
 
 from pdf_reme.shared.paths.app_paths import AppPaths
+
+_MOVE_RETRIES = 3
+_MOVE_RETRY_DELAY_S = 0.15
+
+
+class TrashIOError(OSError):
+    """Dosya çöpe taşınırken/geri yüklenirken kalıcı bir G/Ç hatası oluştu.
+
+    OneDrive/antivirüs/indeksleyici gibi araçların yeni oluşturulmuş bir
+    dosyayı anlık kilitlemesi durumunda `os.rename` (dolayısıyla çıplak
+    `shutil.move`) sessizce kopyala+sil'e düşebilir; kopyalama başarılı olup
+    silme başarısız olursa öksüz (DB'siz) bir kopya kalabilir. `_safe_move`
+    bu senaryoyu yakalayıp öksüz kopya bırakmadan bu hatayı fırlatır.
+    """
 
 
 class TrashFileManager:
@@ -34,10 +50,7 @@ class TrashFileManager:
                 source_path.name
             )
 
-        shutil.move(
-            str(source_path),
-            str(target_path),
-        )
+        _safe_move(source_path, target_path)
 
         return target_path
 
@@ -69,10 +82,7 @@ class TrashFileManager:
                 target_path
             )
 
-        shutil.move(
-            str(source_path),
-            str(target_path),
-        )
+        _safe_move(source_path, target_path)
 
         return target_path
 
@@ -128,3 +138,47 @@ class TrashFileManager:
         )
 
         return target_path.parent / unique_name
+
+
+def _safe_move(source: Path, target: Path) -> None:
+    """`source`'u `target`'a taşır; geçici kilitlere karşı dayanıklıdır ve
+    öksüz (DB'siz) bir kopya asla bırakmaz.
+
+    Önce `os.replace` ile birkaç kez (backoff'lu) dener — bu atomik bir
+    yeniden adlandırmadır, ara bir kopya oluşturmaz. Kalıcı olarak
+    başarısız olursa (örn. farklı birim/disk ya da sürekli kilit),
+    `copy2` + boyut doğrulama + kaynağı silme'ye düşer. Son silme adımı
+    başarısız olursa (kaynak hâlâ kilitliyse), hedefteki kopya geri
+    alınır (rollback) ve `TrashIOError` fırlatılır.
+    """
+    for attempt in range(_MOVE_RETRIES):
+        try:
+            os.replace(source, target)
+            return
+        except OSError:
+            if attempt < _MOVE_RETRIES - 1:
+                time.sleep(_MOVE_RETRY_DELAY_S * (attempt + 1))
+
+    try:
+        shutil.copy2(str(source), str(target))
+    except OSError as error:
+        raise TrashIOError(
+            f"Dosya kopyalanamadı: {source} -> {target}"
+        ) from error
+
+    if target.stat().st_size != source.stat().st_size:
+        target.unlink(missing_ok=True)
+
+        raise TrashIOError(
+            f"Kopyalanan dosyanın boyutu eşleşmiyor: {source} -> {target}"
+        )
+
+    try:
+        source.unlink()
+    except OSError as error:
+        # Kaynak hâlâ kilitli; öksüz kopya bırakmamak için hedef geri alınır.
+        target.unlink(missing_ok=True)
+
+        raise TrashIOError(
+            f"Kaynak dosya silinemedi, taşıma geri alındı: {source}"
+        ) from error

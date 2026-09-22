@@ -32,7 +32,20 @@ def detect_document_type(file_path: str | Path) -> str | None:
     return SUPPORTED_EXTENSIONS.get(path.suffix.lower())
 
 
-def validate_file(file_path: str | Path) -> FileValidationResult:
+def validate_file(
+    file_path: str | Path,
+    *,
+    password: str | None = None,
+) -> FileValidationResult:
+    """`file_path`'i açıp türüne göre bozuk olup olmadığını denetler.
+
+    `password` yalnızca şifreli bir PDF için önceden (örn. bir parola
+    diyaloğuyla) doğrulanmış parolayı geçirmek içindir; hiçbir yere
+    yazılmaz, yalnızca bu çağrı süresince bellekte kullanılır. Şifreli
+    bir PDF için `password` verilmemişse dosya "encrypted" nedeniyle
+    geçersiz sayılır (genel "bozuk dosya" hatasından ayrı tutulur).
+    """
+
     path = Path(file_path)
 
     if not path.is_file():
@@ -56,7 +69,19 @@ def validate_file(file_path: str | Path) -> FileValidationResult:
 
     try:
         if document_type == "pdf":
-            PdfReader(path)
+            reader = PdfReader(path)
+
+            if reader.is_encrypted:
+                if password is None:
+                    return FileValidationResult(
+                        is_valid=False,
+                        document_type=document_type,
+                        extension=extension,
+                        error="Şifreli PDF.",
+                    )
+
+                reader.decrypt(password)
+                len(reader.pages)  # Parola doğru mu (erişilebilirlik kontrolü).
 
         elif document_type == "image":
             with Image.open(path) as image:

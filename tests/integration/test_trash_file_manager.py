@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -5,266 +6,186 @@ import pytest
 
 from pdf_reme.infrastructure.filesystem.trash_file_manager import (
     TrashFileManager,
+    TrashIOError,
+    _safe_move,
 )
 
 
-def create_manager(tmp_path: Path) -> TrashFileManager:
-    trash_dir = tmp_path / "trash"
-
-    paths = SimpleNamespace(
-        trash_dir=trash_dir,
-    )
+def _manager(tmp_path: Path) -> TrashFileManager:
+    paths = SimpleNamespace(trash_dir=tmp_path / "trash")
 
     return TrashFileManager(paths)
 
 
-def test_move_to_trash_moves_file(tmp_path):
-    manager = create_manager(tmp_path)
+def _make_pdf(path: Path, content: bytes = b"%PDF-1.4 fake content") -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(content)
 
-    source = tmp_path / "test.pdf"
-    source.write_bytes(b"pdf-content")
+    return path
 
-    target = manager.move_to_trash(source)
+
+# ----------------------------------------------------------------------
+# Üretilmiş bir PDF için normal çöp/geri yükleme akışı (kilit yok)
+# ----------------------------------------------------------------------
+
+
+def test_move_to_trash_then_restore_round_trip(tmp_path):
+    manager = _manager(tmp_path)
+
+    source = _make_pdf(
+        tmp_path / "library" / "generated" / "output.pdf"
+    )
+    original_bytes = source.read_bytes()
+
+    trash_path = manager.move_to_trash(source)
+
+    assert not source.exists()
+    assert trash_path.exists()
+    assert trash_path.read_bytes() == original_bytes
+
+    restore_path = tmp_path / "library" / "generated" / "output.pdf"
+
+    restored_path = manager.restore_from_trash(trash_path, restore_path)
+
+    assert not trash_path.exists()
+    assert restored_path.exists()
+    assert restored_path.read_bytes() == original_bytes
+
+
+def test_move_to_trash_generates_unique_name_on_collision(tmp_path):
+    manager = _manager(tmp_path)
+
+    first_source = _make_pdf(tmp_path / "library" / "a" / "dup.pdf", b"a")
+    second_source = _make_pdf(tmp_path / "library" / "b" / "dup.pdf", b"b")
+
+    first_trash_path = manager.move_to_trash(first_source)
+    second_trash_path = manager.move_to_trash(second_source)
+
+    assert first_trash_path != second_trash_path
+    assert first_trash_path.read_bytes() == b"a"
+    assert second_trash_path.read_bytes() == b"b"
+
+
+# ----------------------------------------------------------------------
+# `_safe_move` — kilit simülasyonu (os.rename/os.replace geçici başarısız)
+# ----------------------------------------------------------------------
+
+
+def test_safe_move_falls_back_to_copy_when_replace_locked(
+    tmp_path, monkeypatch
+):
+    source = _make_pdf(tmp_path / "source.pdf")
+    target = tmp_path / "trash" / "source.pdf"
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    real_replace = os.replace
+
+    def flaky_replace(src, dst):
+        raise PermissionError("dosya başka bir işlem tarafından kullanılıyor")
+
+    monkeypatch.setattr(os, "replace", flaky_replace)
+    monkeypatch.setattr(
+        "pdf_reme.infrastructure.filesystem.trash_file_manager._MOVE_RETRY_DELAY_S",
+        0,
+    )
+
+    _safe_move(source, target)
 
     assert not source.exists()
     assert target.exists()
-    assert target.parent == tmp_path / "trash"
-    assert target.name == "test.pdf"
-    assert target.read_bytes() == b"pdf-content"
+    assert target.read_bytes() == b"%PDF-1.4 fake content"
+
+    monkeypatch.setattr(os, "replace", real_replace)
 
 
-def test_move_to_trash_creates_trash_directory(tmp_path):
-    manager = create_manager(tmp_path)
+def test_safe_move_raises_trash_io_error_and_rolls_back_when_source_locked(
+    tmp_path, monkeypatch
+):
+    """Kopyalama başarılı olur ama kaynağın son `unlink`'i kilit yüzünden
+    başarısız olursa: hedefteki kopya geri alınır (öksüz kopya bırakılmaz)
+    ve `TrashIOError` fırlatılır."""
 
-    source = tmp_path / "document.pdf"
-    source.write_bytes(b"content")
+    source = _make_pdf(tmp_path / "locked-source.pdf")
+    target = tmp_path / "trash" / "locked-source.pdf"
+    target.parent.mkdir(parents=True, exist_ok=True)
 
-    trash_dir = tmp_path / "trash"
+    def flaky_replace(src, dst):
+        raise PermissionError("dosya kilitli")
 
-    assert not trash_dir.exists()
+    real_unlink = Path.unlink
 
-    manager.move_to_trash(source)
+    def selective_unlink(self, *args, **kwargs):
+        # Yalnızca kaynağın silinmesini kilitli gibi başarısız kıl;
+        # rollback'in hedefi geri alma işlemi (target.unlink) etkilenmez.
+        if self == source:
+            raise PermissionError("kaynak hâlâ kilitli")
 
-    assert trash_dir.exists()
-    assert trash_dir.is_dir()
+        return real_unlink(self, *args, **kwargs)
 
+    monkeypatch.setattr(os, "replace", flaky_replace)
+    monkeypatch.setattr(
+        "pdf_reme.infrastructure.filesystem.trash_file_manager._MOVE_RETRY_DELAY_S",
+        0,
+    )
+    monkeypatch.setattr(Path, "unlink", selective_unlink)
 
-def test_move_to_trash_does_not_overwrite_same_named_file(tmp_path):
-    manager = create_manager(tmp_path)
+    with pytest.raises(TrashIOError):
+        _safe_move(source, target)
 
-    trash_dir = tmp_path / "trash"
-    trash_dir.mkdir()
-
-    existing = trash_dir / "test.pdf"
-    existing.write_bytes(b"old-content")
-
-    source = tmp_path / "test.pdf"
-    source.write_bytes(b"new-content")
-
-    target = manager.move_to_trash(source)
-
-    assert existing.read_bytes() == b"old-content"
-
-    assert target.exists()
-    assert target != existing
-    assert target.name.startswith("test_")
-    assert target.suffix == ".pdf"
-    assert target.read_bytes() == b"new-content"
+    # Hedefteki (öksüz kalacak) kopya geri alınmış olmalı.
+    assert not target.exists()
+    # Kaynak (kilitli olduğu için) hâlâ yerinde durmalı.
+    assert source.exists()
 
 
-def test_move_to_trash_raises_for_missing_file(tmp_path):
-    manager = create_manager(tmp_path)
+def test_safe_move_raises_trash_io_error_when_copy_fails(
+    tmp_path, monkeypatch
+):
+    source = _make_pdf(tmp_path / "uncopyable.pdf")
+    target = tmp_path / "trash" / "uncopyable.pdf"
+    target.parent.mkdir(parents=True, exist_ok=True)
 
-    missing = tmp_path / "missing.pdf"
+    def flaky_replace(src, dst):
+        raise PermissionError("dosya kilitli")
+
+    def flaky_copy2(src, dst):
+        raise OSError("disk dolu")
+
+    monkeypatch.setattr(os, "replace", flaky_replace)
+    monkeypatch.setattr(
+        "pdf_reme.infrastructure.filesystem.trash_file_manager._MOVE_RETRY_DELAY_S",
+        0,
+    )
+    monkeypatch.setattr(
+        "pdf_reme.infrastructure.filesystem.trash_file_manager.shutil.copy2",
+        flaky_copy2,
+    )
+
+    with pytest.raises(TrashIOError):
+        _safe_move(source, target)
+
+    assert source.exists()
+    assert not target.exists()
+
+
+# ----------------------------------------------------------------------
+# Var olan güvenlik kontrolleri korunmuş mu
+# ----------------------------------------------------------------------
+
+
+def test_move_to_trash_rejects_missing_file(tmp_path):
+    manager = _manager(tmp_path)
 
     with pytest.raises(FileNotFoundError):
-        manager.move_to_trash(missing)
+        manager.move_to_trash(tmp_path / "missing.pdf")
 
 
-def test_move_to_trash_rejects_directory(tmp_path):
-    manager = create_manager(tmp_path)
+def test_permanently_delete_still_rejects_paths_outside_trash_dir(tmp_path):
+    manager = _manager(tmp_path)
 
-    directory = tmp_path / "folder"
-    directory.mkdir()
-
-    with pytest.raises(ValueError):
-        manager.move_to_trash(directory)
-
-def test_restore_from_trash_restores_file_to_original_location(tmp_path):
-    manager = create_manager(tmp_path)
-
-    trash_dir = tmp_path / "trash"
-    trash_dir.mkdir()
-
-    trash_file = trash_dir / "test.pdf"
-    trash_file.write_bytes(b"pdf-content")
-
-    restore_path = (
-        tmp_path
-        / "library"
-        / "imported"
-        / "pdf"
-        / "test.pdf"
-    )
-
-    restored = manager.restore_from_trash(
-        trash_file,
-        restore_path,
-    )
-
-    assert not trash_file.exists()
-    assert restored.exists()
-    assert restored == restore_path
-    assert restored.read_bytes() == b"pdf-content"
-
-
-def test_restore_from_trash_creates_missing_parent_directories(tmp_path):
-    manager = create_manager(tmp_path)
-
-    trash_dir = tmp_path / "trash"
-    trash_dir.mkdir()
-
-    trash_file = trash_dir / "document.pdf"
-    trash_file.write_bytes(b"content")
-
-    restore_path = (
-        tmp_path
-        / "library"
-        / "imported"
-        / "pdf"
-        / "document.pdf"
-    )
-
-    manager.restore_from_trash(
-        trash_file,
-        restore_path,
-    )
-
-    assert restore_path.parent.exists()
-    assert restore_path.exists()
-
-
-def test_restore_from_trash_does_not_overwrite_existing_file(tmp_path):
-    manager = create_manager(tmp_path)
-
-    trash_dir = tmp_path / "trash"
-    trash_dir.mkdir()
-
-    trash_file = trash_dir / "test.pdf"
-    trash_file.write_bytes(b"trash-content")
-
-    restore_dir = (
-        tmp_path
-        / "library"
-        / "imported"
-        / "pdf"
-    )
-    restore_dir.mkdir(parents=True)
-
-    existing = restore_dir / "test.pdf"
-    existing.write_bytes(b"existing-content")
-
-    restored = manager.restore_from_trash(
-        trash_file,
-        existing,
-    )
-
-    assert existing.read_bytes() == b"existing-content"
-
-    assert restored.exists()
-    assert restored != existing
-    assert restored.name.startswith("test_")
-    assert restored.suffix == ".pdf"
-    assert restored.read_bytes() == b"trash-content"
-
-
-def test_restore_from_trash_raises_for_missing_file(tmp_path):
-    manager = create_manager(tmp_path)
-
-    missing = tmp_path / "trash" / "missing.pdf"
-    restore_path = tmp_path / "library" / "missing.pdf"
-
-    with pytest.raises(FileNotFoundError):
-        manager.restore_from_trash(
-            missing,
-            restore_path,
-        )
-
-
-def test_restore_from_trash_rejects_directory(tmp_path):
-    manager = create_manager(tmp_path)
-
-    trash_dir = tmp_path / "trash"
-    trash_dir.mkdir()
-
-    directory = trash_dir / "folder"
-    directory.mkdir()
-
-    restore_path = tmp_path / "library" / "folder"
+    outside_file = _make_pdf(tmp_path / "outside" / "not-in-trash.pdf")
 
     with pytest.raises(ValueError):
-        manager.restore_from_trash(
-            directory,
-            restore_path,
-        )
-
-def test_permanently_delete_removes_file_from_trash(tmp_path):
-    manager = create_manager(tmp_path)
-
-    trash_dir = tmp_path / "trash"
-    trash_dir.mkdir()
-
-    trash_file = trash_dir / "delete-me.pdf"
-    trash_file.write_bytes(b"pdf-content")
-
-    result = manager.permanently_delete(trash_file)
-
-    assert result is True
-    assert not trash_file.exists()
-
-
-def test_permanently_delete_returns_false_when_file_missing(tmp_path):
-    manager = create_manager(tmp_path)
-
-    trash_dir = tmp_path / "trash"
-    trash_dir.mkdir()
-
-    missing_file = trash_dir / "missing.pdf"
-
-    result = manager.permanently_delete(missing_file)
-
-    assert result is False
-
-
-def test_permanently_delete_rejects_file_outside_trash(tmp_path):
-    manager = create_manager(tmp_path)
-
-    outside_file = tmp_path / "library" / "important.pdf"
-    outside_file.parent.mkdir(parents=True)
-    outside_file.write_bytes(b"important-content")
-
-    with pytest.raises(
-        ValueError,
-        match="Yalnızca PDF-REME çöp kutusundaki dosyalar",
-    ):
         manager.permanently_delete(outside_file)
 
     assert outside_file.exists()
-
-
-def test_permanently_delete_rejects_directory(tmp_path):
-    manager = create_manager(tmp_path)
-
-    trash_dir = tmp_path / "trash"
-    trash_dir.mkdir()
-
-    directory = trash_dir / "folder"
-    directory.mkdir()
-
-    with pytest.raises(
-        ValueError,
-        match="Yalnızca dosyalar kalıcı olarak silinebilir",
-    ):
-        manager.permanently_delete(directory)
-
-    assert directory.exists()

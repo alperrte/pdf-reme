@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import qtawesome as qta
+from pypdf import PdfReader
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
@@ -11,6 +12,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QStackedWidget,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -18,6 +20,7 @@ from PySide6.QtWidgets import (
 from pdf_reme.presentation import backend_gateway
 from pdf_reme.presentation.pages.pdf_tool_page import PdfToolPage
 from pdf_reme.presentation.widgets.app_dialog import AppDialog
+from pdf_reme.presentation.widgets.option_check_box import OptionCheckBox
 
 _ENCRYPT_INDEX = 0
 _DECRYPT_INDEX = 1
@@ -35,7 +38,10 @@ class SecurityPage(PdfToolPage):
     def _init_state(self) -> None:
         self._file_row: QWidget | None = None
         self._eye_actions: list[tuple[QLineEdit, QAction]] = []
-        self._running_encrypt = True
+        self._running_encrypt = False
+        self._pending_source_path: str | None = None
+        self._pending_trash_library = False
+        self._pending_remove_source = False
 
     def _build_content(self) -> QWidget:
         page = QWidget()
@@ -113,6 +119,12 @@ class SecurityPage(PdfToolPage):
 
         edit.addAction(action, QLineEdit.ActionPosition.TrailingPosition)
 
+        # `QAction`'ın kendisi `setCursor()` sunmaz; Qt'nin bu action için
+        # oluşturduğu dahili buton gerçek bir widget'tır — imleç oraya uygulanır.
+        for button in edit.findChildren(QToolButton):
+            if action in button.actions():
+                button.setCursor(Qt.CursorShape.PointingHandCursor)
+
         self._eye_actions.append((edit, action))
 
         return edit
@@ -157,6 +169,12 @@ class SecurityPage(PdfToolPage):
         self._enc_warning.setWordWrap(True)
         self._enc_warning.hide()
 
+        self._enc_trash_library_check = OptionCheckBox()
+        self._enc_trash_library_check.setChecked(True)
+
+        self._enc_remove_source_check = OptionCheckBox()
+        self._enc_remove_source_check.setChecked(True)
+
         self._enc_button = QPushButton()
         self._enc_button.setObjectName("opPrimaryButton")
         self._enc_button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -168,6 +186,8 @@ class SecurityPage(PdfToolPage):
         column.addWidget(owner_field)
         column.addWidget(self._enc_owner_hint)
         column.addWidget(name_field)
+        column.addWidget(self._enc_trash_library_check)
+        column.addWidget(self._enc_remove_source_check)
         column.addWidget(self._enc_button, 0, Qt.AlignmentFlag.AlignRight)
 
         return form
@@ -316,16 +336,31 @@ class SecurityPage(PdfToolPage):
         self._enc_owner_caption.setText(tr("security.owner_password"))
         self._enc_owner_hint.setText(tr("security.owner_hint"))
         self._enc_name_caption.setText(tr("security.output_name"))
+        self._enc_trash_library_check.setText(
+            tr("security.cleanup_trash_library")
+        )
+        self._enc_remove_source_check.setText(
+            tr("security.cleanup_remove_source")
+        )
         self._enc_button.setText(tr("security.encrypt_action"))
 
         self._dec_password_caption.setText(tr("security.password_open"))
         self._dec_name_caption.setText(tr("security.output_name"))
         self._dec_button.setText(tr("security.decrypt_action"))
 
-        for edit, action in self._eye_actions:
-            action.setToolTip(tr("security.show_password"))
+        for _edit, action in self._eye_actions:
+            action.setToolTip(self._eye_tooltip(action))
 
         self._enc_owner.setPlaceholderText(tr("security.owner_placeholder"))
+
+    def _eye_tooltip(self, action: QAction) -> str:
+        tr = self._language_manager.tr
+
+        return (
+            tr("security.hide_password_action")
+            if action.isChecked()
+            else tr("security.show_password_action")
+        )
 
     def _apply_eye_icons(self) -> None:
         color = self._theme_manager.icon_color()
@@ -337,6 +372,7 @@ class SecurityPage(PdfToolPage):
                     color=color,
                 )
             )
+            action.setToolTip(self._eye_tooltip(action))
 
     def _apply_content_theme(self) -> None:
         self._apply_eye_icons()
@@ -360,6 +396,9 @@ class SecurityPage(PdfToolPage):
         owner = self._enc_owner.text()
 
         self._running_encrypt = True
+        self._pending_source_path = path
+        self._pending_trash_library = self._enc_trash_library_check.isChecked()
+        self._pending_remove_source = self._enc_remove_source_check.isChecked()
 
         self._run_task(
             lambda: backend_gateway.encrypt_pdf(path, name, password, owner),
@@ -392,6 +431,8 @@ class SecurityPage(PdfToolPage):
         self._clear_passwords()
 
         if self._running_encrypt:
+            self._cleanup_after_encrypt(document)
+
             title = tr("security.encrypt_success_title")
             body = tr("security.encrypt_success_body")
         else:
@@ -401,6 +442,80 @@ class SecurityPage(PdfToolPage):
         self._show_result(title=title, body=body, documents=[document])
 
         self.clear_files()
+
+    def _cleanup_after_encrypt(self, document) -> None:
+        """Şifreleme sonrası isteğe bağlı temizlik.
+
+        Sıra zorunlu: (1) şifreli çıktı zaten üretildi (buraya gelindiyse
+        `encrypt_pdf` başarılı demektir), (2) burada `PdfReader` ile açılabilirliği
+        doğrulanır — doğrulama başarısız olursa hiçbir temizlik adımı çalışmaz,
+        (3) ancak bundan sonra kütüphane kopyası çöpe taşınır ve/veya kaynak
+        dosya (son bir onay istenerek) diskten kaldırılır.
+        """
+        tr = self._language_manager.tr
+
+        source_path = self._pending_source_path
+        trash_library = self._pending_trash_library
+        remove_source = self._pending_remove_source
+
+        self._pending_source_path = None
+        self._pending_trash_library = False
+        self._pending_remove_source = False
+
+        if source_path is None or not (trash_library or remove_source):
+            return
+
+        try:
+            PdfReader(document.stored_path)
+
+        except Exception:
+            # Şifreli çıktı doğrulanamadı; hiçbir temizlik adımı çalıştırılmaz.
+            return
+
+        if trash_library:
+            library_document = backend_gateway.find_active_document_by_path(
+                source_path
+            )
+
+            if library_document is not None:
+                try:
+                    backend_gateway.move_to_trash(library_document.id)
+
+                except backend_gateway.OperationError as error:
+                    AppDialog.inform(
+                        self,
+                        title=tr("trash.action_failed_title"),
+                        body=tr(f"op.error.{error.reason}"),
+                        variant="danger",
+                    )
+
+        if remove_source and not Path(source_path).exists():
+            # Kaynak, kütüphane kopyasıyla birlikte zaten çöpe taşınmış
+            # (aynı dosya) olabilir; bu durumda yapılacak ek bir şey yok.
+            remove_source = False
+
+        if remove_source:
+            confirmed = AppDialog.ask(
+                self,
+                title=tr("security.remove_source_confirm_title"),
+                body=tr("security.remove_source_confirm_body"),
+                confirm_text=tr("security.remove_source_confirm_button"),
+                variant="danger",
+            )
+
+            if not confirmed:
+                return
+
+            try:
+                Path(source_path).unlink()
+
+            except OSError:
+                AppDialog.inform(
+                    self,
+                    title=tr("security.remove_source_failed_title"),
+                    body=tr("security.remove_source_failed_body"),
+                    variant="danger",
+                )
 
     def _handle_error_reason(self, reason: str) -> bool:
         tr = self._language_manager.tr

@@ -16,6 +16,7 @@ _MARGIN = 22
 _SPACING = 20
 _LABEL_HEIGHT = 22
 _LABEL_GAP = 4
+_IDENTITY_HEIGHT = 16
 
 _MIN_ZOOM = 0.4
 _MAX_ZOOM = 3.0
@@ -60,12 +61,31 @@ class PageSlot(QWidget):
         self._number.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._number.setFixedHeight(_LABEL_HEIGHT)
 
+        self._identity = QLabel()
+        self._identity.setObjectName("pageViewIdentity")
+        self._identity.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._identity.setFixedHeight(_IDENTITY_HEIGHT)
+
         layout.addWidget(self._frame)
         layout.addWidget(self._number)
+        layout.addWidget(self._identity)
+
+    def set_identity_text(self, text: str) -> None:
+        """Orijinal sayfa kimliği ikinci satırı; boşsa görünmez metin kalır
+        (gürültü yok), ama yükseklik hesaplarını basit tutmak için satır
+        yeri her sayfada aynı sabit boyutta ayrılır."""
+        self._identity.setText(text)
 
     def set_page_size(self, width: int, height: int) -> None:
         self._frame.setFixedSize(width, height)
-        self.setFixedSize(width, height + _LABEL_GAP + _LABEL_HEIGHT)
+        self.setFixedSize(
+            width,
+            height
+            + _LABEL_GAP
+            + _LABEL_HEIGHT
+            + _LABEL_GAP
+            + _IDENTITY_HEIGHT,
+        )
 
     def set_pixmap(self, pixmap: QPixmap) -> None:
         self._frame.setPixmap(pixmap)
@@ -132,8 +152,13 @@ class PageScrollView(QScrollArea):
         self._offsets: list[int] = []
         self._rendered: dict[int, int] = {}
         self._selected: set[int] = set()
+        self._identities: list[str] = []
         self._zoom = 1.0
         self._current = 0
+        # `_apply_scroll`'un gecikmeli (`singleShot`) tekrarlarının, aradan
+        # yeni bir `set_document`/`scroll_to` çağrısı geçtikten SONRA ateşleyip
+        # eski hedefe geri sarmasını önlemek için kendi kendine yeten bir jeton.
+        self._scroll_generation = 0
 
         self._render_timer = QTimer(self)
         self._render_timer.setSingleShot(True)
@@ -174,6 +199,10 @@ class PageScrollView(QScrollArea):
         yerine sayfa kimliğiyle (`scroll_position` çıktısı) geri yüklenir."""
         previous_scroll = self.verticalScrollBar().value()
 
+        # Önceki durumdan kalmış gecikmeli `_apply_scroll` tekrarları artık
+        # geçersiz; bu belge/durum için yeni bir nesil başlatılır.
+        self._scroll_generation += 1
+
         self._document = document
         self._clear_slots()
 
@@ -193,6 +222,7 @@ class PageScrollView(QScrollArea):
             slot.show()
 
             self._slots.append(slot)
+            self._apply_identity(slot)
 
         self._current = min(self._current, max(0, count - 1))
 
@@ -226,6 +256,17 @@ class PageScrollView(QScrollArea):
         for slot in self._slots:
             slot.set_selected(slot.page_number in self._selected)
 
+    def set_identities(self, labels: list[str]) -> None:
+        """`labels[i]`: (i+1). sayfanın ikinci satır metni (boş = gösterme).
+
+        `set_document` slot'ları yeniden yarattığı için (`set_selection` ile
+        aynı desen), değer burada saklanır ve slot oluşturulurken uygulanır.
+        """
+        self._identities = list(labels)
+
+        for slot in self._slots:
+            self._apply_identity(slot)
+
     def scroll_to(self, page: int, *, only_if_hidden: bool = False) -> None:
         index = page - 1
 
@@ -243,7 +284,10 @@ class PageScrollView(QScrollArea):
         ):
             return
 
-        self._apply_scroll(max(0, top - _MARGIN // 2), tries=3)
+        self._scroll_generation += 1
+        self._apply_scroll(
+            max(0, top - _MARGIN // 2), tries=3, generation=self._scroll_generation
+        )
 
     def flash(self, pages) -> None:
         slots = [
@@ -285,6 +329,13 @@ class PageScrollView(QScrollArea):
     # ------------------------------------------------------------------
     # Yerleşim
     # ------------------------------------------------------------------
+
+    def _apply_identity(self, slot: PageSlot) -> None:
+        index = slot.page_number - 1
+
+        slot.set_identity_text(
+            self._identities[index] if index < len(self._identities) else ""
+        )
 
     def _clear_slots(self) -> None:
         for slot in self._slots:
@@ -377,7 +428,10 @@ class PageScrollView(QScrollArea):
         self._update_current()
         self._schedule_render()
 
-    def _apply_scroll(self, target: int, tries: int) -> None:
+    def _apply_scroll(self, target: int, tries: int, generation: int) -> None:
+        if generation != self._scroll_generation:
+            return
+
         bar = self.verticalScrollBar()
         bar.setValue(target)
 
@@ -385,7 +439,7 @@ class PageScrollView(QScrollArea):
             QTimer.singleShot(
                 30,
                 lambda: shiboken6.isValid(self)
-                and self._apply_scroll(target, tries - 1),
+                and self._apply_scroll(target, tries - 1, generation),
             )
 
     def _on_resized(self) -> None:

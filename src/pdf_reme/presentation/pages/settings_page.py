@@ -59,11 +59,6 @@ class SettingsPage(QWidget):
 
         self._setup_ui()
 
-        self._theme_manager.theme_changed.connect(self._sync_appearance)
-        self._language_manager.language_changed.connect(
-            self._sync_appearance
-        )
-
         self._load_values()
         self.retranslate_ui()
         self.apply_theme()
@@ -230,6 +225,12 @@ class SettingsPage(QWidget):
 
         layout.addLayout(row)
 
+        # Bu kart yalnızca KALICI başlangıç varsayılanını değiştirir; kenar
+        # çubuğundaki anlık tema/dil geçişi bu değeri hiç etkilemez (bkz.
+        # app_settings.set_startup_theme/language).
+        self._appearance_restart_notice = self._hint()
+        layout.addWidget(self._appearance_restart_notice)
+
         self._animation_check = OptionCheckBox()
         self._animation_check.toggled.connect(
             app_settings.set_startup_animation
@@ -391,9 +392,11 @@ class SettingsPage(QWidget):
         self._sync_appearance()
 
     def _sync_appearance(self, *_args) -> None:
-        """Kenar çubuğundaki tema/dil düğmeleri de değişimi tetikleyebilir."""
-        theme = self._theme_manager.current_theme
-        language = self._language_manager.current_language
+        """Segment düğmelerini KALICI başlangıç varsayılanına göre günceller
+        -- kenar çubuğundaki anlık (çalışma zamanı) tema/dil değişikliği bu
+        görünümü artık etkilemez, yalnızca bu sayfadan yapılan seçim eder."""
+        theme = app_settings.startup_theme()
+        language = app_settings.startup_language()
 
         if theme in self._theme_buttons:
             self._theme_buttons[theme].setChecked(True)
@@ -402,8 +405,12 @@ class SettingsPage(QWidget):
             self._language_buttons[language].setChecked(True)
 
     def refresh(self) -> None:
-        """Sayfa her açıldığında depolama özetini tazeler."""
+        """Sayfa her açıldığında görünüm segmentlerini ve depolama özetini
+        tazeler (kenar çubuğundan yapılan anlık değişiklikler kalıcı
+        başlangıç varsayılanını etkilemediği için burada geri alınmaz)."""
         tr = self._language_manager.tr
+
+        self._sync_appearance()
 
         try:
             summary = backend_gateway.storage_summary()
@@ -438,10 +445,16 @@ class SettingsPage(QWidget):
     # ------------------------------------------------------------------
 
     def _on_theme_chosen(self, theme: str) -> None:
-        self._theme_manager.set_theme(theme)
+        """Yalnızca KALICI başlangıç varsayılanını kaydeder; çalışma zamanı
+        temasını (kenar çubuğu anlık geçişi) değiştirmez -- bu yüzden
+        `ThemeManager` değil `app_settings` çağrılır."""
+        app_settings.set_startup_theme(theme)
 
     def _on_language_chosen(self, language: str) -> None:
-        self._language_manager.set_language(language)
+        """Yalnızca KALICI başlangıç varsayılanını kaydeder; çalışma zamanı
+        dilini (kenar çubuğu anlık geçişi) değiştirmez -- bu yüzden
+        `LanguageManager` değil `app_settings` çağrılır."""
+        app_settings.set_startup_language(language)
 
     def _on_level_chosen(self, level: str) -> None:
         app_settings.set_default_compress_level(level)
@@ -643,6 +656,10 @@ class SettingsPage(QWidget):
 
         for key, button in self._language_buttons.items():
             button.setText(tr(f"settings.language.{key}"))
+
+        self._appearance_restart_notice.setText(
+            tr("settings.appearance_restart_notice")
+        )
 
         self._animation_check.setText(tr("settings.startup_animation"))
         self._theme_animation_check.setText(tr("settings.theme_animation"))

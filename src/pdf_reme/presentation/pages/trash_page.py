@@ -125,7 +125,14 @@ class TrashPage(DocumentListPage):
         if document is None or not self._confirm_restore([document]):
             return
 
-        backend_gateway.restore_from_trash(document_id)
+        try:
+            backend_gateway.restore_from_trash(document_id)
+
+        except backend_gateway.OperationError as error:
+            self.refresh()
+            self._show_action_error(error)
+            return
+
         self.refresh()
 
     def _on_delete_forever_requested(self, document_id: str) -> None:
@@ -134,7 +141,14 @@ class TrashPage(DocumentListPage):
         if document is None or not self._confirm_delete_forever([document]):
             return
 
-        backend_gateway.permanently_delete(document_id)
+        try:
+            backend_gateway.permanently_delete(document_id)
+
+        except backend_gateway.OperationError as error:
+            self.refresh()
+            self._show_action_error(error)
+            return
+
         self.refresh()
 
     def _on_clear_trash(self) -> None:
@@ -165,8 +179,21 @@ class TrashPage(DocumentListPage):
             if not self._confirm_restore(documents):
                 return False
 
+            failed = 0
+
             for document in documents:
-                backend_gateway.restore_from_trash(document.id)
+                try:
+                    backend_gateway.restore_from_trash(document.id)
+
+                except backend_gateway.OperationError:
+                    failed += 1
+
+            if failed:
+                self._show_bulk_action_error(
+                    "trash.restore_bulk_failed_body",
+                    failed=failed,
+                    total=len(documents),
+                )
 
             return True
 
@@ -174,8 +201,21 @@ class TrashPage(DocumentListPage):
             if not self._confirm_delete_forever(documents):
                 return False
 
+            failed = 0
+
             for document in documents:
-                backend_gateway.permanently_delete(document.id)
+                try:
+                    backend_gateway.permanently_delete(document.id)
+
+                except backend_gateway.OperationError:
+                    failed += 1
+
+            if failed:
+                self._show_bulk_action_error(
+                    "trash.delete_forever_bulk_failed_body",
+                    failed=failed,
+                    total=len(documents),
+                )
 
             return True
 

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QSettings, Signal
+from PySide6.QtCore import QObject, Signal
 
 
 TRANSLATIONS_DIR = (
@@ -27,8 +27,6 @@ class LanguageManager(QObject):
     ) -> None:
         super().__init__(parent)
 
-        self._settings = QSettings()
-
         self._translations: dict[
             str,
             dict[str, str],
@@ -39,13 +37,13 @@ class LanguageManager(QObject):
                 language
             )
 
-        self._current_language = self._settings.value(
-            "appearance/language",
-            DEFAULT_LANGUAGE,
-        )
+        # Başlangıç değeri kalıcı "başlangıç varsayılanı"ndan okunur (bkz.
+        # app_settings.startup_language); döngüsel içe aktarmadan kaçınmak
+        # için burada, kullanım anında (fonksiyon içinde) içe aktarılır --
+        # app_settings.py da geçerlilik denetimi için bu modülü içe aktarır.
+        from pdf_reme.presentation import app_settings
 
-        if self._current_language not in SUPPORTED_LANGUAGES:
-            self._current_language = DEFAULT_LANGUAGE
+        self._current_language = app_settings.startup_language()
 
     @staticmethod
     def _load_language_file(
@@ -77,6 +75,11 @@ class LanguageManager(QObject):
         self,
         language: str,
     ) -> None:
+        """Yalnızca bu çalışma zamanı örneğini değiştirir (kenar çubuğu
+        anlık geçişi); kalıcı başlangıç varsayılanını ETKİLEMEZ -- onu
+        değiştirmek için `app_settings.set_startup_language` kullanılır
+        (bkz. `settings_page.py::_on_language_chosen`)."""
+
         if language not in SUPPORTED_LANGUAGES:
             return
 
@@ -84,11 +87,6 @@ class LanguageManager(QObject):
             return
 
         self._current_language = language
-
-        self._settings.setValue(
-            "appearance/language",
-            language,
-        )
 
         self.language_changed.emit(
             language

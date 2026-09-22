@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, QSettings, Signal
+from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
@@ -68,15 +68,13 @@ class ThemeManager(QObject):
     ) -> None:
         super().__init__(parent)
 
-        self._settings = QSettings()
+        # Başlangıç değeri kalıcı "başlangıç varsayılanı"ndan okunur (bkz.
+        # app_settings.startup_theme); döngüsel içe aktarmadan kaçınmak için
+        # burada, kullanım anında (fonksiyon içinde) içe aktarılır --
+        # app_settings.py da geçerlilik denetimi için bu modülü içe aktarır.
+        from pdf_reme.presentation import app_settings
 
-        self._current_theme = self._settings.value(
-            "appearance/theme",
-            DEFAULT_THEME,
-        )
-
-        if self._current_theme not in THEMES:
-            self._current_theme = DEFAULT_THEME
+        self._current_theme = app_settings.startup_theme()
 
     @property
     def current_theme(self) -> str:
@@ -90,6 +88,11 @@ class ThemeManager(QObject):
         self,
         theme: str,
     ) -> None:
+        """Yalnızca bu çalışma zamanı örneğini değiştirir (kenar çubuğu
+        anlık geçişi); kalıcı başlangıç varsayılanını ETKİLEMEZ -- onu
+        değiştirmek için `app_settings.set_startup_theme` kullanılır
+        (bkz. `settings_page.py::_on_theme_chosen`)."""
+
         if theme not in THEMES:
             return
 
@@ -97,11 +100,6 @@ class ThemeManager(QObject):
             return
 
         self._current_theme = theme
-
-        self._settings.setValue(
-            "appearance/theme",
-            theme,
-        )
 
         self.theme_changed.emit(
             theme

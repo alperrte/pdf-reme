@@ -87,3 +87,54 @@ def test_string_booleans_from_ini_are_parsed():
 
     assert app_settings.startup_animation() is True
     assert app_settings.split_keep_rest() is False
+
+
+def test_startup_language_and_theme_defaults():
+    # Madde 7-10: kalıcı başlangıç varsayılanları, hiç ayarlanmamışken
+    # i18n/theme modüllerinin kendi varsayılanlarına düşer.
+    assert app_settings.startup_language() == "tr"
+    assert app_settings.startup_theme() == "light"
+
+
+def test_startup_language_and_theme_round_trip():
+    app_settings.set_startup_language("en")
+    app_settings.set_startup_theme("dark")
+
+    assert app_settings.startup_language() == "en"
+    assert app_settings.startup_theme() == "dark"
+
+    app_settings.set_startup_language("tr")
+    app_settings.set_startup_theme("light")
+
+    assert app_settings.startup_language() == "tr"
+    assert app_settings.startup_theme() == "light"
+
+
+def test_startup_language_and_theme_reuse_legacy_keys():
+    # Geriye uyumluluk: yeni fonksiyonlar, LanguageManager/ThemeManager'ın
+    # eskiden doğrudan okuyup yazdığı anahtar adlarını birebir kullanır --
+    # böylece mevcut kullanıcının kayıtlı değeri sıfırlanmadan "başlangıç
+    # varsayılanı" haline gelir.
+    settings = QSettings()
+    settings.setValue("appearance/language", "en")
+    settings.setValue("appearance/theme", "dark")
+
+    assert app_settings.startup_language() == "en"
+    assert app_settings.startup_theme() == "dark"
+
+
+def test_invalid_startup_language_and_theme_are_ignored():
+    app_settings.set_startup_language("de")
+    app_settings.set_startup_theme("blue")
+
+    assert app_settings.startup_language() == "tr"
+    assert app_settings.startup_theme() == "light"
+
+
+def test_corrupt_stored_startup_language_and_theme_fall_back_to_defaults():
+    settings = QSettings()
+    settings.setValue("appearance/language", "xx")
+    settings.setValue("appearance/theme", "neon")
+
+    assert app_settings.startup_language() == "tr"
+    assert app_settings.startup_theme() == "light"

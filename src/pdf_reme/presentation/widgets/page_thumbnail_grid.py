@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 PAGE_MIME = "application/x-pdfreme-page"
 
 THUMB_WIDTH = 150
-THUMB_HEIGHT = 208
+THUMB_HEIGHT = 224
 IMAGE_BOX_WIDTH = 128
 IMAGE_BOX_HEIGHT = 158
 _GRID_SPACING = 14
@@ -94,11 +94,22 @@ class PageThumbnail(QFrame):
         self._number_label.setObjectName("editThumbNumber")
         self._number_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        self._identity_label = QLabel()
+        self._identity_label.setObjectName("editThumbIdentity")
+        self._identity_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._identity_label.setVisible(False)
+
         layout.addWidget(self._image_label, 0, Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(self._number_label)
+        layout.addWidget(self._identity_label)
 
     def set_pixmap(self, pixmap: QPixmap) -> None:
         self._image_label.setPixmap(pixmap)
+
+    def set_identity_text(self, text: str) -> None:
+        """Orijinal sayfa kimliği ikinci satırı; boşsa gizlenir (gürültü yok)."""
+        self._identity_label.setText(text)
+        self._identity_label.setVisible(bool(text))
 
     def set_selected(self, selected: bool) -> None:
         if bool(self.property("selected")) == selected:
@@ -204,6 +215,42 @@ class PageThumbnailGrid(QWidget):
     def set_selection(self, selected: set[int]) -> None:
         for thumb in self._thumbs:
             thumb.set_selected(thumb.page_number in selected)
+
+    def set_identities(self, labels: list[str]) -> None:
+        """`labels[i]`: (i+1). sayfanın ikinci satır metni (boş = gösterme)."""
+        for thumb, label in zip(self._thumbs, labels):
+            thumb.set_identity_text(label)
+
+    def expected_height(self) -> int:
+        """Tek sütun modunda tüm thumbnail'ların kaplayacağı toplam yükseklik.
+
+        Gerçek `height()` bu değere henüz ulaşmadıysa, Qt'nin layout/resize
+        geçişi de henüz tamamlanmamış demektir (bkz. `EditPage._finish_restore`).
+        """
+        margins = self._layout.contentsMargins()
+        count = len(self._thumbs)
+
+        if count == 0:
+            return margins.top() + margins.bottom()
+
+        return (
+            margins.top()
+            + margins.bottom()
+            + count * THUMB_HEIGHT
+            + (count - 1) * _GRID_SPACING
+        )
+
+    def expected_offset(self, index: int) -> int | None:
+        """Tek sütun modunda `index`. thumbnail'ın bu widget içindeki üst y
+        konumu; gerçek `geometry()` henüz hesaplanmamış olsa bile doğrudur.
+        Çoklu sütun modunda (satır/sütun karışık) None döner.
+        """
+        if not self._single_column or not (0 <= index < len(self._thumbs)):
+            return None
+
+        margins = self._layout.contentsMargins()
+
+        return margins.top() + index * (THUMB_HEIGHT + _GRID_SPACING)
 
     def columns_for_width(self, width: int) -> int:
         if self._single_column:

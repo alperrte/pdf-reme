@@ -36,10 +36,14 @@ class ImportDocumentUseCase:
     def execute(
         self,
         source_path: str | Path,
+        *,
+        password: str | None = None,
     ) -> ImportDocumentResult:
         source = Path(source_path)
 
-        inspection = self.inspection_service.inspect(source)
+        inspection = self.inspection_service.inspect(
+            source, password=password
+        )
 
         if not inspection.is_valid:
             return ImportDocumentResult(

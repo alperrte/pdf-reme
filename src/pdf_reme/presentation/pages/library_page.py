@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 
 import qtawesome as qta
+from pypdf import PdfReader
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -22,10 +23,26 @@ from pdf_reme.presentation.document_format import (
 )
 from pdf_reme.presentation.pages.document_list_page import DocumentListPage
 from pdf_reme.presentation.widgets.app_dialog import AppDialog, DialogItem
+from pdf_reme.presentation.widgets.encrypted_pdf_password_dialog import (
+    EncryptedPdfPasswordDialog,
+)
 from pdf_reme.presentation.widgets.file_drop_area import DropOverlay
 from pdf_reme.presentation.widgets.selection_bar import BulkAction
 
 logger = logging.getLogger(__name__)
+
+
+def _is_encrypted_pdf(path: str) -> bool:
+    if Path(path).suffix.lower() != ".pdf":
+        return False
+
+    try:
+        return PdfReader(path).is_encrypted
+
+    except Exception:
+        # Gerçekten bozuksa asıl hata normal içe aktarma akışında (validate_file)
+        # yakalanıp gösterilecek; burada yalnızca "şifreli mi" sorusuna bakılır.
+        return False
 
 
 def _file_dialog_filter() -> str:
@@ -242,11 +259,45 @@ class LibraryPage(DocumentListPage):
 
         self._import_paths(paths)
 
+    def _resolve_encrypted_paths(
+        self, paths: list[str]
+    ) -> tuple[list[str], dict[str, str]]:
+        """Şifreli PDF'ler için parola sorar; iptal edilen dosyalar atlanır.
+
+        Dönen `passwords` eşlemesi yalnızca bu içe aktarma çağrısı süresince
+        bellekte tutulur; hiçbir yere yazılmaz.
+        """
+
+        resolved: list[str] = []
+        passwords: dict[str, str] = {}
+
+        for path in paths:
+            if _is_encrypted_pdf(path):
+                password = EncryptedPdfPasswordDialog.prompt(
+                    self, path=path, file_name=Path(path).name
+                )
+
+                if password is None:
+                    continue
+
+                passwords[path] = password
+
+            resolved.append(path)
+
+        return resolved, passwords
+
     def _import_paths(self, paths: list[str]) -> None:
         tr = self._language_manager.tr
 
+        paths, passwords = self._resolve_encrypted_paths(paths)
+
+        if not paths:
+            return
+
         try:
-            outcomes = backend_gateway.import_documents(paths)
+            outcomes = backend_gateway.import_documents(
+                paths, passwords=passwords
+            )
 
         except Exception:
             logger.exception("Belge içe aktarma beklenmedik şekilde başarısız oldu.")
