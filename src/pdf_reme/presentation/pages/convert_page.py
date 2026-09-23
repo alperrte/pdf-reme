@@ -33,6 +33,7 @@ from pdf_reme.presentation.document_format import (
     format_file_size,
     type_icon,
 )
+from pdf_reme.presentation.encrypted_pdf_resolver import EncryptedPdfResolver
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.theme import get_theme_manager
 from pdf_reme.presentation.widgets.app_dialog import AppDialog, DialogItem
@@ -109,6 +110,7 @@ class ConvertPage(QWidget):
         self._paths: list[str] = []
         self._pdf_error: str | None = None
         self._pdf_page_count: int | None = None
+        self._resolver = EncryptedPdfResolver(self)
 
         self._runner = TaskRunner(self)
         self._runner.succeeded.connect(self._on_succeeded)
@@ -683,7 +685,7 @@ class ConvertPage(QWidget):
                 self._pdf_page_count = count
 
     def _rebuild_file_rows(self, kind: str) -> None:
-        reorderable = kind == "images_to_pdf" and len(self._paths) > 1
+        reorderable = len(self._paths) > 1
 
         self._file_list.set_reorderable(
             reorderable and not self._runner.is_running
@@ -831,34 +833,67 @@ class ConvertPage(QWidget):
         if self._runner.is_running:
             return
 
+        tr = self._language_manager.tr
+
         supported: list[str] = []
-        rejected: list[str] = []
+        rejected: list[DialogItem] = []
 
         for path in paths:
-            if Path(path).suffix.lower() in CONVERT_SUPPORTED_EXTENSIONS:
-                if path not in self._paths and path not in supported:
-                    supported.append(path)
-            else:
-                rejected.append(path)
-
-        if rejected:
-            tr = self._language_manager.tr
-
-            AppDialog.inform(
-                self,
-                title=tr("convert.rejected_title"),
-                body=tr("convert.rejected_body"),
-                variant="danger",
-                icon_name="fa5s.ban",
-                items=[
+            if Path(path).suffix.lower() not in CONVERT_SUPPORTED_EXTENSIONS:
+                rejected.append(
                     DialogItem(
                         name=Path(path).name,
                         detail=tr("library.upload_unsupported"),
                         icon_name="fa5s.ban",
                         accent="red",
                     )
-                    for path in rejected
-                ],
+                )
+                continue
+
+            resolved = path
+
+            if Path(path).suffix.lower() == ".pdf":
+                try:
+                    info = backend_gateway.inspect_pdf(path)
+                except OperationError as error:
+                    rejected.append(
+                        DialogItem(
+                            name=Path(path).name,
+                            detail=tr(f"op.error.{error.reason}"),
+                            icon_name="fa5s.ban",
+                            accent="red",
+                        )
+                    )
+                    continue
+
+                if info.encrypted:
+                    try:
+                        resolved = self._resolver.resolve(path)
+                    except OperationError as error:
+                        rejected.append(
+                            DialogItem(
+                                name=Path(path).name,
+                                detail=tr(f"op.error.{error.reason}"),
+                                icon_name="fa5s.ban",
+                                accent="red",
+                            )
+                        )
+                        continue
+
+                    if resolved is None:
+                        continue
+
+            if resolved not in self._paths and resolved not in supported:
+                supported.append(resolved)
+
+        if rejected:
+            AppDialog.inform(
+                self,
+                title=tr("convert.rejected_title"),
+                body=tr("convert.rejected_body"),
+                variant="danger",
+                icon_name="fa5s.ban",
+                items=rejected,
             )
 
         if supported:
@@ -882,7 +917,7 @@ class ConvertPage(QWidget):
 
     def _reorder_file(self, source: int, slot: int) -> None:
         """Sürükle-bırak: `_paths` okların kullandığı aynı listedir."""
-        if self._runner.is_running or self._kind() != "images_to_pdf":
+        if self._runner.is_running:
             return
 
         self._paths[:] = move_item(self._paths, source, slot)
@@ -895,6 +930,7 @@ class ConvertPage(QWidget):
         self._paths.clear()
         self._name_input.clear()
         self._range_input.clear()
+        self._resolver.clear()
         self._refresh()
 
     # ------------------------------------------------------------------
@@ -999,6 +1035,7 @@ class ConvertPage(QWidget):
         self._paths.clear()
         self._name_input.clear()
         self._range_input.clear()
+        self._resolver.clear()
         self._refresh()
 
         if action == "reveal":
@@ -1046,6 +1083,7 @@ class ConvertPage(QWidget):
 
     def shutdown(self) -> None:
         self._runner.wait()
+        self._resolver.clear()
 
     # ------------------------------------------------------------------
     # Sürükle-bırak

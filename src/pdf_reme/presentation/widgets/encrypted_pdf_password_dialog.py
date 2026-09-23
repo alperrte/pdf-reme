@@ -82,12 +82,12 @@ class EncryptedPdfPasswordDialog(QDialog):
         layout.setContentsMargins(28, 28, 28, 24)
         layout.setSpacing(0)
 
-        title_label = QLabel(tr("library.encrypted_dialog.title"))
+        title_label = QLabel(tr("tool.encrypted_dialog.title"))
         title_label.setObjectName("appDialogTitle")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         body_label = QLabel(
-            tr("library.encrypted_dialog.body").format(name=file_name)
+            tr("tool.encrypted_dialog.body").format(name=file_name)
         )
         body_label.setObjectName("appDialogBody")
         body_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -103,7 +103,7 @@ class EncryptedPdfPasswordDialog(QDialog):
         self._password.setFixedHeight(38)
         self._password.setEchoMode(QLineEdit.EchoMode.Password)
         self._password.setPlaceholderText(
-            tr("library.encrypted_dialog.placeholder")
+            tr("tool.encrypted_dialog.placeholder")
         )
         self._password.textEdited.connect(self._on_text_edited)
         self._password.returnPressed.connect(self._on_confirm)
@@ -111,7 +111,7 @@ class EncryptedPdfPasswordDialog(QDialog):
         layout.addWidget(self._password)
         layout.addSpacing(6)
 
-        self._error_label = QLabel(tr("library.encrypted_dialog.wrong_password"))
+        self._error_label = QLabel(tr("tool.encrypted_dialog.wrong_password"))
         self._error_label.setObjectName("opWarning")
         self._error_label.setWordWrap(True)
         self._error_label.hide()
@@ -128,7 +128,7 @@ class EncryptedPdfPasswordDialog(QDialog):
         cancel_button.clicked.connect(self.reject)
 
         self._confirm_button = QPushButton(
-            tr("library.encrypted_dialog.confirm")
+            tr("tool.encrypted_dialog.confirm")
         )
         self._confirm_button.setObjectName("appDialogConfirmButton")
         self._confirm_button.setProperty("variant", "primary")

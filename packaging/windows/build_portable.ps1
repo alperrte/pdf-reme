@@ -1,10 +1,16 @@
 <#
 .SYNOPSIS
-    PDF-REME Portable dagitimini (ZIP) uretir.
+    PDF-REME Portable dagitimini (klasor + ZIP) uretir.
 
 .DESCRIPTION
     dist\PDF-REME (PyInstaller onedir ciktisi) + runtime\libreoffice
-    (resmi LibreOffice) -> dist\PDF-REME-v<surum>-Portable.zip
+    (resmi LibreOffice) -> dist\PDF-REME-v<surum>-Portable\ (kalici klasor)
+    ve dist\PDF-REME-v<surum>-Portable.zip
+
+    Portable klasoru varsayilan olarak SILINMEZ: Inno Setup (PDF-REME.iss)
+    bu klasoru dogrudan kurulum kaynagi (SourceRoot) olarak kullanir, boylece
+    Setup.exe ve Portable ZIP birebir ayni ikili dosya kumesinden uretilir.
+    Klasoru temizlemek icin acikca -CleanStaging verin.
 
     ZIP acildiginda PDF-REME-v<surum>-Portable\ klasoru olusur:
         PDF-REME.exe
@@ -23,8 +29,18 @@
     Writer belgelerinin donusumunu kilitliyor. Sozluk dosyalari, lisans ve
     readme dosyalari korunur.
 
+    Surum, src\pdf_reme\presentation\app_info.py::APP_VERSION degerinden
+    okunur (tek gercek kaynak) ve packaging\windows\AppVersion.generated.iss
+    dosyasina yazilir; PDF-REME.iss surumu bu dosyadan alir, boylece surum
+    3 ayri yerde elle guncellenmez.
+
 .PARAMETER Build
     Once PyInstaller ile dist\PDF-REME klasorunu yeniden uretir.
+
+.PARAMETER CleanStaging
+    ZIP olusturulduktan sonra dist\PDF-REME-v<surum>-Portable\ klasorunu siler.
+    Varsayilan davranis DEGILDIR; Inno Setup bu klasoru kaynak olarak
+    kullandigi icin normalde kalici tutulur.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File packaging\windows\build_portable.ps1 -Build
@@ -34,7 +50,7 @@ param(
     [switch]$Build,
     [string]$LibreOfficeSource,
     [string]$LibreOfficeMsi,
-    [switch]$KeepStaging
+    [switch]$CleanStaging
 )
 
 $ErrorActionPreference = 'Stop'
@@ -68,9 +84,15 @@ $versionMatch = Select-String -Path $appInfo -Pattern '^APP_VERSION\s*=\s*"([^"]
 if (-not $versionMatch) { throw "APP_VERSION okunamadi: $appInfo" }
 $Version = $versionMatch.Matches[0].Groups[1].Value
 $PackageName = "PDF-REME-v$Version-Portable"
-$Staging = Join-Path $BuildRoot $PackageName
+$Staging = Join-Path $DistDir $PackageName
 $ZipPath = Join-Path $DistDir "$PackageName.zip"
 Write-Host "Surum: $Version  ->  $PackageName"
+
+# Inno Setup (PDF-REME.iss), AppVersion'i #include ile bu dosyadan okur;
+# boylece surum yalnizca APP_VERSION'da degisir, .iss elle duzenlenmez.
+$versionIssPath = Join-Path $PSScriptRoot 'AppVersion.generated.iss'
+Set-Content -Path $versionIssPath -Value "#define AppVersion `"$Version`"" -Encoding UTF8
+Write-Host "Surum dosyasi yazildi: $versionIssPath"
 
 # --- 1) PyInstaller ciktisi ------------------------------------------------
 if ($Build) {
@@ -199,12 +221,16 @@ try {
 }
 finally { $archive.Dispose() }
 
-if (-not $KeepStaging) {
+# MSI'dan cikarilan gecici dosyalar her zaman temizlenir (Portable klasoru
+# ile karistirilmamali); Portable klasoru ise Inno Setup'in kaynagi oldugu
+# icin varsayilan olarak KORUNUR, yalnizca -CleanStaging ile silinir.
+if ($extractDir -and (Test-Path $extractDir)) { Remove-Item $extractDir -Recurse -Force }
+if ($CleanStaging) {
     Remove-Item $Staging -Recurse -Force
-    if ($extractDir -and (Test-Path $extractDir)) { Remove-Item $extractDir -Recurse -Force }
 }
 
 $sizeMb = [math]::Round((Get-Item $ZipPath).Length / 1MB, 1)
 Write-Step 'Tamamlandi'
+Write-Host "Portable klasor: $Staging$(if (-not $CleanStaging) { ' (korundu; Inno Setup kaynagi)' } else { ' (silindi, -CleanStaging)' })"
 Write-Host "ZIP : $ZipPath"
 Write-Host "Boyut: $sizeMb MB"

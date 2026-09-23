@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from pdf_reme.presentation.backend_gateway import OperationError
+from pdf_reme.presentation.encrypted_pdf_resolver import EncryptedPdfResolver
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.theme import get_theme_manager
 from pdf_reme.presentation.widgets.app_dialog import AppDialog
@@ -34,6 +36,7 @@ class ViewerPage(QWidget):
         self._theme_manager = get_theme_manager()
 
         self._document = QPdfDocument(self)
+        self._resolver = EncryptedPdfResolver(self)
 
         self._zoom_factor = 1.0
 
@@ -206,7 +209,19 @@ class ViewerPage(QWidget):
         stored_path: str,
         display_name: str,
     ) -> None:
-        error = self._document.load(stored_path)
+        self._resolver.clear()
+
+        try:
+            resolved = self._resolver.resolve(stored_path)
+        except OperationError:
+            resolved = None
+
+        if resolved is None:
+            self._stack.setCurrentIndex(0)
+
+            return
+
+        error = self._document.load(resolved)
 
         if error != QPdfDocument.Error.None_:
             AppDialog.inform(

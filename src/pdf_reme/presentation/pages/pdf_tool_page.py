@@ -24,6 +24,7 @@ from pdf_reme.presentation.document_format import (
     format_file_size,
     type_icon,
 )
+from pdf_reme.presentation.encrypted_pdf_resolver import EncryptedPdfResolver
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.theme import get_theme_manager
 from pdf_reme.presentation.widgets.app_dialog import AppDialog, DialogItem
@@ -31,6 +32,7 @@ from pdf_reme.presentation.widgets.busy_overlay import BusyOverlay
 from pdf_reme.presentation.widgets.file_drop_area import DropOverlay
 from pdf_reme.presentation.widgets.pdf_picker_dialog import PdfPickerDialog
 from pdf_reme.presentation.widgets.reorderable_list import move_item
+from pdf_reme.presentation.widgets.selection_check import SelectionCheck
 from pdf_reme.presentation.widgets.task_runner import TaskRunner
 
 logger = logging.getLogger(__name__)
@@ -76,6 +78,8 @@ class PdfToolPage(QWidget):
 
         self._paths: list[str] = []
         self._infos: dict[str, PdfInfo] = {}
+        self._selected_paths: set[str] = set()
+        self._resolver = EncryptedPdfResolver(self)
 
         self._runner = TaskRunner(self)
         self._runner.succeeded.connect(self._on_succeeded)
@@ -122,6 +126,9 @@ class PdfToolPage(QWidget):
 
     def _on_files_changed(self) -> None:
         """Seçili dosya kümesi değişti (ekleme/çıkarma/temizleme)."""
+
+    def _on_selection_changed(self) -> None:
+        """Toplu-seçim (checkbox) kümesi değişti."""
 
     def _handle_result(self, result) -> None:
         raise NotImplementedError
@@ -332,6 +339,7 @@ class PdfToolPage(QWidget):
         index: int = 0,
         count: int = 1,
         movable: bool = False,
+        selectable: bool = False,
         on_remove=None,
     ) -> QWidget:
         icon_name, accent = type_icon("pdf")
@@ -340,9 +348,20 @@ class PdfToolPage(QWidget):
         row.setObjectName("opFileRow")
         row.setFixedHeight(56)
 
+        if selectable:
+            row.setProperty("selected", path in self._selected_paths)
+
         row_layout = QHBoxLayout(row)
         row_layout.setContentsMargins(14, 0, 10, 0)
         row_layout.setSpacing(12)
+
+        if selectable:
+            check = SelectionCheck()
+            check.setChecked(path in self._selected_paths)
+            check.toggled.connect(
+                lambda checked, p=path: self._toggle_selection(p, checked)
+            )
+            row_layout.addWidget(check)
 
         icon_label = QLabel()
         icon_label.setPixmap(
@@ -442,6 +461,7 @@ class PdfToolPage(QWidget):
         self._refresh()
 
     def _refresh(self) -> None:
+        self._selected_paths &= set(self._paths)
         self._stack.setCurrentIndex(1 if self._paths else 0)
         self._refresh_content()
 
@@ -505,22 +525,24 @@ class PdfToolPage(QWidget):
         rejected: list[DialogItem] = []
 
         for path in paths:
-            if path in self._paths or path in accepted:
+            resolved, reason = self._resolve_or_reject(path)
+
+            if resolved is None:
+                if reason is not None:
+                    rejected.append(
+                        DialogItem(
+                            name=Path(path).name,
+                            detail=reason,
+                            icon_name="fa5s.ban",
+                            accent="red",
+                        )
+                    )
                 continue
 
-            reason = self._reject_reason(path)
+            if resolved in self._paths or resolved in accepted:
+                continue
 
-            if reason is None:
-                accepted.append(path)
-            else:
-                rejected.append(
-                    DialogItem(
-                        name=Path(path).name,
-                        detail=reason,
-                        icon_name="fa5s.ban",
-                        accent="red",
-                    )
-                )
+            accepted.append(resolved)
 
         if rejected:
             AppDialog.inform(
@@ -549,25 +571,41 @@ class PdfToolPage(QWidget):
         self._on_files_changed()
         self._refresh()
 
-    def _reject_reason(self, path: str) -> str | None:
-        """Dosya kabul edilmezse kullanıcıya gösterilecek gerekçe."""
+    def _resolve_or_reject(self, path: str) -> tuple[str | None, str | None]:
+        """Dosyayı kabul edilecek yola çözümler; olmazsa gerekçeyi döner.
+
+        Şifreli PDF'lerde parola iptal edilirse `(None, None)` döner (sessizce
+        atlanır, reddedilmiş sayılmaz).
+        """
         tr = self._language_manager.tr
 
         if Path(path).suffix.lower() != ".pdf":
-            return tr("library.upload_unsupported")
+            return None, tr("library.upload_unsupported")
+
+        if self.ALLOW_ENCRYPTED:
+            try:
+                info = backend_gateway.inspect_pdf(path)
+            except OperationError as error:
+                return None, tr(f"op.error.{error.reason}")
+
+            self._infos[path] = info
+
+            return path, None
 
         try:
-            info = backend_gateway.inspect_pdf(path)
-
+            resolved = self._resolver.resolve(path)
         except OperationError as error:
-            return tr(f"op.error.{error.reason}")
+            return None, tr(f"op.error.{error.reason}")
 
-        if info.encrypted and not self.ALLOW_ENCRYPTED:
-            return tr(f"tool.reject.encrypted.{self.KEY}")
+        if resolved is None:
+            return None, None
 
-        self._infos[path] = info
+        try:
+            self._infos[resolved] = backend_gateway.inspect_pdf(resolved)
+        except OperationError as error:
+            return None, tr(f"op.error.{error.reason}")
 
-        return None
+        return resolved, None
 
     def _remove_file(self, index: int) -> None:
         if self._runner.is_running:
@@ -601,6 +639,33 @@ class PdfToolPage(QWidget):
     def clear_files(self) -> None:
         self._paths.clear()
         self._infos.clear()
+        self._selected_paths.clear()
+        self._resolver.clear()
+
+        self._on_files_changed()
+        self._refresh()
+
+    def _toggle_selection(self, path: str, checked: bool) -> None:
+        if checked:
+            self._selected_paths.add(path)
+        else:
+            self._selected_paths.discard(path)
+
+        self._refresh()
+        self._on_selection_changed()
+
+    def _on_remove_selected(self) -> None:
+        if self._runner.is_running or not self._selected_paths:
+            return
+
+        self._paths = [
+            path for path in self._paths if path not in self._selected_paths
+        ]
+
+        for path in self._selected_paths:
+            self._infos.pop(path, None)
+
+        self._selected_paths.clear()
 
         self._on_files_changed()
         self._refresh()
@@ -724,6 +789,7 @@ class PdfToolPage(QWidget):
 
     def shutdown(self) -> None:
         self._runner.wait()
+        self._resolver.clear()
 
     # ------------------------------------------------------------------
     # Sürükle-bırak

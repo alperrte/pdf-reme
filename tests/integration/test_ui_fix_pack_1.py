@@ -260,9 +260,13 @@ assert len(out_widths) == 4
 for got, exp in zip(out_widths, want):
     assert abs(got - exp) < 0.02, (out_widths, want)
 
-# PDF/Office türünde sürükleme kapalı (yalnız görsel→PDF sıralanabilir).
-page._add_paths([make_pdf("x.pdf", 1)])
+# Madde 14: başarılı dönüştürme sonrası `_paths` temizlenir; PDF → Görsel
+# türünde birden fazla dosya eklenince sıralama artık açık (yalnız
+# images_to_pdf'e özel değil).
+page._add_paths([make_pdf("x.pdf", 1), make_pdf("y.pdf", 1)])
 pump(200)
+assert page._kind() == "pdf_to_images", page._kind()
+assert page._file_list.reorderable
 page.shutdown() if hasattr(page, "shutdown") else None
 print("SCENARIO OK")
 """

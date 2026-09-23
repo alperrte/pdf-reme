@@ -1114,6 +1114,26 @@ def inspect_pdf(path: str) -> PdfInfo:
         raise OperationError("corrupt_pdf", str(error)) from error
 
 
+def resolve_encrypted_copy(path: str, password: str) -> Path:
+    """Şifreli bir PDF'in düz (şifresiz) geçici kopyasını çıkarır."""
+    source = Path(path)
+    workspace = AppPaths().temp_dir / f"decrypted_{uuid4().hex[:10]}"
+    workspace.mkdir(parents=True, exist_ok=True)
+    target = workspace / source.name
+
+    try:
+        PdfSecurityService().decrypt(source, target, password)
+    except Exception as error:
+        shutil.rmtree(workspace, ignore_errors=True)
+        raise _operation_error_from(error) from error
+
+    return target
+
+
+def discard_encrypted_copy(resolved_path: Path) -> None:
+    shutil.rmtree(resolved_path.parent, ignore_errors=True)
+
+
 def merge_pdfs(paths: list[str], name: str) -> Document:
     if len(paths) < 2:
         raise OperationError("merge_needs_two")

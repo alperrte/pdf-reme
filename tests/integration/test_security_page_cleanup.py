@@ -162,15 +162,26 @@ page._enc_button.click()
 wait_idle(page)
 
 refreshed = backend_gateway.fetch_library_documents()
-# Kütüphane kopyası taşınmadı: yalnızca yeni şifreli dosya eklendi, eski
-# kayıt hâlâ "active" olsa da fiziksel dosyası kaldırıldığı için içerik
-# artık yok -- ama DB kaydı silinmedi/taşınmadı.
-assert any(doc.id == imported.id for doc in refreshed)
+# Kütüphane kaydı taşınmadı/silinmedi (DB'de hâlâ "active"), ama fiziksel
+# dosyası kaldırıldığından artık kütüphane listesinde GÖRÜNMEZ -- silinmiş/
+# taşınmış dosyaların seçilebilir gibi görünmesi düzeltildi (LibraryService
+# artık stored_path'in diskte var olup olmadığını kontrol ediyor).
+assert all(doc.id != imported.id for doc in refreshed)
 
 trashed = backend_gateway.fetch_trashed()
 assert all(doc.id != imported.id for doc in trashed)
 
 assert not Path(stored_path).exists()
+
+from pdf_reme.infrastructure.database.models.document import (
+    Document as DocumentModel,
+)
+from sqlalchemy.orm import Session
+
+with Session(engine) as db_session:
+    row = db_session.get(DocumentModel, imported.id)
+    assert row is not None
+    assert row.status == "active"
 
 print("SCENARIO OK")
 """

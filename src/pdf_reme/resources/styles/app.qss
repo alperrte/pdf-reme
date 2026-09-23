@@ -1755,6 +1755,12 @@ QToolTip {
     border-radius: 12px;
 }
 
+#opFileRow[selected="true"] {
+    background-color: #F5F9FF;
+
+    border: 1px solid #93C5FD;
+}
+
 #opFileName {
     background: transparent;
 
@@ -2068,6 +2074,12 @@ QToolTip {
     background-color: #171D2C;
 
     border: 1px solid #232B3D;
+}
+
+#appRoot[theme="dark"] #opFileRow[selected="true"] {
+    background-color: #17233A;
+
+    border: 1px solid #3B82F6;
 }
 
 #appRoot[theme="dark"] #opFileName {

@@ -64,3 +64,7 @@ thumbnails/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# build_portable.ps1 tarafindan APP_VERSION'dan uretilir (tek gercek kaynak);
+# elle duzenlenmez, surekli olarak yeniden uretilir.
+packaging/windows/AppVersion.generated.iss

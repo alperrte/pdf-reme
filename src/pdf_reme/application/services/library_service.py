@@ -1,9 +1,26 @@
 from datetime import datetime
+from pathlib import Path
 
 from pdf_reme.domain.repositories.document_repository import (
     DocumentRepository,
 )
 from pdf_reme.infrastructure.database.models.document import Document
+
+
+def _stored_file_exists(document: Document) -> bool:
+    """Belgenin fiziksel dosyası hâlâ diskte mi.
+
+    Uygulama dışından (Gezgin, OneDrive senkronu vb.) silinmiş/taşınmış
+    dosyaların DB kaydı "active" kalmaya devam edebilir; bu belgeleri
+    kütüphane listelerinden (kütüphane sayfası, favoriler, son kullanılanlar,
+    araç sayfalarındaki "Kütüphaneden Seç" penceresi) gizlemek için tüm
+    listeleme metotlarında bu kontrol uygulanır -- DB kaydına dokunulmaz,
+    yalnızca görünürlük filtrelenir.
+    """
+    try:
+        return Path(document.stored_path).is_file()
+    except OSError:
+        return False
 
 
 class LibraryService:
@@ -16,6 +33,7 @@ class LibraryService:
             for document in self.repository.get_all()
             if document.library_section == "imported"
             and document.status == "active"
+            and _stored_file_exists(document)
         ]
 
     def get_generated_documents(self) -> list[Document]:
@@ -24,6 +42,7 @@ class LibraryService:
             for document in self.repository.get_all()
             if document.library_section == "generated"
             and document.status == "active"
+            and _stored_file_exists(document)
         ]
 
     def get_favorites(self) -> list[Document]:
@@ -32,6 +51,7 @@ class LibraryService:
             for document in self.repository.get_all()
             if document.is_favorite
             and document.status == "active"
+            and _stored_file_exists(document)
         ]
 
     def get_recent_documents(
@@ -43,6 +63,7 @@ class LibraryService:
             for document in self.repository.get_all()
             if document.last_opened_at is not None
             and document.status == "active"
+            and _stored_file_exists(document)
         ]
 
         documents.sort(

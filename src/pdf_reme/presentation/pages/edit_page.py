@@ -39,6 +39,7 @@ from pdf_reme.presentation.edit_page_map import (
     build_page_map,
     initial_identities,
 )
+from pdf_reme.presentation.encrypted_pdf_resolver import EncryptedPdfResolver
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.theme import get_theme_manager
 from pdf_reme.presentation.widgets.app_dialog import AppDialog, DialogItem
@@ -117,6 +118,7 @@ class EditPage(QWidget):
 
         self._source_path: str | None = None
         self._workspace: Path | None = None
+        self._resolver = EncryptedPdfResolver(self)
 
         # states[0] kaynak, states[i] i. işlemden sonraki geçici PDF.
         self._states: list[str] = []
@@ -593,6 +595,7 @@ class EditPage(QWidget):
             return
 
         self._reset_editor()
+        self._resolver.clear()
 
     def _confirm_discard(self) -> bool:
         if not self._is_dirty():
@@ -613,7 +616,16 @@ class EditPage(QWidget):
         tr = self._language_manager.tr
 
         try:
-            page_count = backend_gateway.read_pdf_page_count(path)
+            resolved = self._resolver.resolve(path)
+        except OperationError as error:
+            self._show_error(error.reason)
+            return
+
+        if resolved is None:
+            return
+
+        try:
+            page_count = backend_gateway.read_pdf_page_count(resolved)
 
         except OperationError as error:
             self._show_error(error.reason)
@@ -622,8 +634,8 @@ class EditPage(QWidget):
         self._reset_editor()
 
         self._workspace = backend_gateway.new_edit_workspace()
-        self._source_path = path
-        self._states = [path]
+        self._source_path = resolved
+        self._states = [resolved]
         self._ops = []
         self._records = []
         self._cursor = 0
@@ -1042,7 +1054,16 @@ class EditPage(QWidget):
             return
 
         try:
-            backend_gateway.read_pdf_page_count(path)
+            resolved = self._resolver.resolve(path)
+        except OperationError as error:
+            self._show_error(error.reason)
+            return
+
+        if resolved is None:
+            return
+
+        try:
+            backend_gateway.read_pdf_page_count(resolved)
 
         except OperationError as error:
             self._show_error(error.reason)
@@ -1052,7 +1073,7 @@ class EditPage(QWidget):
 
         choice = PdfPageSelectDialog.pick(
             self,
-            path,
+            resolved,
             target_page_count=self._page_count,
             selected_page=selected_page,
         )
@@ -1076,7 +1097,7 @@ class EditPage(QWidget):
             EditOperation(
                 "insert_pages",
                 {
-                    "insert_pdf_path": path,
+                    "insert_pdf_path": resolved,
                     "source_page_numbers": pages,
                     "after_page": after,
                 },
@@ -1547,6 +1568,7 @@ class EditPage(QWidget):
         self._release_document()
 
         backend_gateway.discard_edit_workspace(self._workspace)
+        self._resolver.clear()
 
         self._workspace = None
 

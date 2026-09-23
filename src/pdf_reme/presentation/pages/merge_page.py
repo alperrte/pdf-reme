@@ -58,7 +58,18 @@ class MergePage(PdfToolPage):
         self._clear_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self._clear_button.clicked.connect(self.clear_files)
 
+        self._remove_selected_button = QPushButton()
+        self._remove_selected_button.setObjectName("opSecondaryButton")
+        self._remove_selected_button.setCursor(
+            Qt.CursorShape.PointingHandCursor
+        )
+        self._remove_selected_button.setEnabled(False)
+        self._remove_selected_button.clicked.connect(
+            self._on_remove_selected
+        )
+
         header.addWidget(self._summary_label, 1)
+        header.addWidget(self._remove_selected_button)
         header.addWidget(self._add_button)
         header.addWidget(self._library_button)
         header.addWidget(self._clear_button)
@@ -130,6 +141,7 @@ class MergePage(PdfToolPage):
                     index=index,
                     count=count,
                     movable=True,
+                    selectable=True,
                 )
                 for index, path in enumerate(self._paths)
             ]
@@ -168,6 +180,12 @@ class MergePage(PdfToolPage):
             button.setEnabled(not busy)
 
         self._clear_button.setEnabled(bool(self._paths) and not busy)
+        self._remove_selected_button.setEnabled(
+            bool(self._selected_paths) and not busy
+        )
+
+    def _on_selection_changed(self) -> None:
+        self._update_action()
 
     def _retranslate_content(self) -> None:
         tr = self._language_manager.tr
@@ -175,6 +193,7 @@ class MergePage(PdfToolPage):
         self._add_button.setText(tr("tool.add_file"))
         self._library_button.setText(tr("tool.add_library"))
         self._clear_button.setText(tr("tool.clear"))
+        self._remove_selected_button.setText(tr("tool.remove_selected"))
         self._name_caption.setText(tr("merge.output_name"))
         self._merge_button.setText(tr("merge.action"))
 
@@ -184,6 +203,9 @@ class MergePage(PdfToolPage):
         self._add_button.setIcon(qta.icon("fa5s.plus", color=icon_color))
         self._library_button.setIcon(qta.icon("fa5s.book", color=icon_color))
         self._clear_button.setIcon(qta.icon("fa5s.times", color=icon_color))
+        self._remove_selected_button.setIcon(
+            qta.icon("fa5s.check-square", color=icon_color)
+        )
         self._merge_button.setIcon(
             qta.icon("fa5s.object-group", color="#FFFFFF")
         )

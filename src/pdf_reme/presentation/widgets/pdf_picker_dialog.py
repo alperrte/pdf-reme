@@ -23,6 +23,7 @@ from pdf_reme.presentation.document_format import (
 )
 from pdf_reme.presentation.i18n import get_language_manager
 from pdf_reme.presentation.theme import get_theme_manager
+from pdf_reme.presentation.widgets.selection_check import SelectionCheck
 
 _SHADOW_MARGIN = 26
 _DIALOG_WIDTH = 480
@@ -60,6 +61,7 @@ class PdfPickerDialog(QDialog):
         self._multi = multi
         self._selected_path: str | None = None
         self._selected_paths: list[str] = []
+        self._row_checks: dict[str, SelectionCheck] = {}
 
         self.setObjectName("appDialog")
         self.setModal(True)
@@ -178,7 +180,7 @@ class PdfPickerDialog(QDialog):
 
         if self._multi:
             self._list.setSelectionMode(
-                QListWidget.SelectionMode.ExtendedSelection
+                QListWidget.SelectionMode.MultiSelection
             )
         self._list.setFixedHeight(
             min(
@@ -213,6 +215,12 @@ class PdfPickerDialog(QDialog):
         row_layout.setContentsMargins(12, 0, 12, 0)
         row_layout.setSpacing(12)
 
+        if self._multi:
+            check = SelectionCheck()
+            check.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            row_layout.addWidget(check)
+            self._row_checks[document.stored_path] = check
+
         icon_label = QLabel()
         icon_name, accent = type_icon(document.document_type)
 
@@ -246,7 +254,8 @@ class PdfPickerDialog(QDialog):
         return row
 
     def _on_selection_changed(self) -> None:
-        count = len(self._list.selectedItems())
+        selected_items = self._list.selectedItems()
+        count = len(selected_items)
 
         self._confirm_button.setEnabled(count > 0)
 
@@ -258,6 +267,26 @@ class PdfPickerDialog(QDialog):
                 if count
                 else tr("picker.multi_select")
             )
+
+            selected_paths = {
+                item.data(Qt.ItemDataRole.UserRole)
+                for item in selected_items
+            }
+
+            for row_index in range(self._list.count()):
+                item = self._list.item(row_index)
+                path = item.data(Qt.ItemDataRole.UserRole)
+                is_selected = path in selected_paths
+
+                check = self._row_checks.get(path)
+                if check is not None:
+                    check.setChecked(is_selected)
+
+                row_widget = self._list.itemWidget(item)
+                if row_widget is not None:
+                    row_widget.setProperty("selected", is_selected)
+                    row_widget.style().unpolish(row_widget)
+                    row_widget.style().polish(row_widget)
 
     def _on_confirm_clicked(self) -> None:
         items = self._list.selectedItems()
