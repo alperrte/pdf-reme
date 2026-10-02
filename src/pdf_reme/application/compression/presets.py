@@ -3,7 +3,6 @@ from pdf_reme.application.compression.options import (
     PdfCompressionOptions,
 )
 
-
 _PRESETS = {
     CompressionProfile.LIGHT: PdfCompressionOptions(
         profile=CompressionProfile.LIGHT,

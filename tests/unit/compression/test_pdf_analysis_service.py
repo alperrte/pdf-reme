@@ -2,14 +2,13 @@ from io import BytesIO
 
 import pikepdf
 import pytest
-
-from PIL import Image
 from pikepdf import (
     Dictionary,
     Name,
     Pdf,
     Stream,
 )
+from PIL import Image
 
 from pdf_reme.infrastructure.pdf.pdf_analysis_service import (
     PdfAnalysisService,
